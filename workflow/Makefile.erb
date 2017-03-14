@@ -1,0 +1,604 @@
+#
+#    Copyright (c) 2015 California Institute of Technology.
+#    All rights reserved.
+#
+
+ARTIFACTS_DIR ?= artifacts
+AUDITS_DIR ?= tests/audits
+AUDITS_TREE ?= ../data/Audit/export/europa
+AUDITS_TEST_FILE ?= $(AUDITS_DIR)/run-audits$(XML_SUFFIX)
+
+CENSUS_SUFFIX = .census
+
+CREATE_VIEW ?= $(JRUBY_CMD) ../tools/create-view
+CREATE_VIEW_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+
+DEPENDENCIES_FILE ?= .dependencies
+
+ENTAIL ?= $(JRUBY_CMD) ../tools/entail-pellet
+ENTAIL_OPTS = --info
+
+EMPTY_IMPORTS_FILE ?= empty-imports.yaml
+
+ENTAILMENTS_DIR ?= $(ARTIFACTS_DIR)/entailments
+
+EXTRACT ?= $(JRUBY_CMD) ../tools/extract-jena
+EXTRACT_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+
+FUSEKI_DIR ?= /opt/jena-fuseki-0.2.7
+FUSEKI_S_DELETE ?= $(FUSEKI_DIR)/s-delete
+FUSEKI_S_GET ?= $(FUSEKI_DIR)/s-get
+FUSEKI_S_PUT ?= $(FUSEKI_DIR)/s-put
+
+GET_UNSATS ?= ../tools/get-unsats
+GET_UNSAT_PROPS_OPTS ?= --info --get-props
+GET_UNSAT_PROP_TARGETS_OPTS ?= --info --get-prop-targets
+GET_UNSAT_PROP_RANGES_OPTS ?= --get-prop-ranges
+GET_UNSAT_SUPS_OPTS ?= --info --get-sups
+GET_UNSAT_IRIS_OPTS ?= --info
+
+GET_UNSAT_ROOTS ?= ../tools/get-unsat-roots
+GET_UNSAT_ROOTS_OPTS ?= --info
+
+IRI_TO_MDID ?= ../tools/iri-to-mdid
+IRI_TO_MDID_OPTS ?= --info
+
+JRUBY ?= jruby
+JRUBY_CMD ?= $(JRUBY) $(JRUBY_OPTS)
+JRUBY_OPTS ?= --headless -J-Xmx16384m -J-Djava.util.logging.config.file=logging.properties
+
+LOAD_REPO ?= ../tools/load-jena
+LOAD_REPO_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+
+LOCATION_MAPPING_FILE ?= location-mapping.yaml
+
+MAKE_MAKEFILE ?= ../tools/make-makefile
+
+OMF_METADATA_CENSUS ?= $(JRUBY_CMD) ../tools/omf-metadata-census
+OMF_METADATA_CENSUS_OPTS ?= 
+
+OWL_SUFFIX = .owl
+
+PROFILE_STEM ?= imce.jpl.nasa.gov/magicdraw/project/PROJECT-927665a2-e396-4502-8f63-8a5ee1319b3f/specializingProfile/4a37bdc3-c49e-11e2-b21a-21995248050b
+PROFILE_FILE ?= artifacts/$(PROFILE_STEM)$(OWL_SUFFIX)
+PROFILE_IRI ?= http://$(PROFILE_STEM)
+PROFILE_VALIDATION_FILE ?= $(TESTS_DIR)/$(PROFILE_STEM)$(XML_SUFFIX)
+
+PROJECT_BUNDLE_IRI ?= <%= PROJECT_BUNDLE_IRI = 'http://imce.jpl.nasa.gov/foundation/project/project-bundle' %>
+
+PROVENANCE_FILE ?= $(ARTIFACTS_DIR)/OMF2OTIProvenances.json
+
+REPORTS_DIR ?= $(ARTIFACTS_DIR)/reports
+REPORTS_TREE ?= ../data/Report/export/europa
+REPORTS_TEST_FILE ?= $(REPORTS_DIR)/run-reports$(ZIP_SUFFIX)
+RUBY ?= $(JRUBY)
+RUN_AUDITS ?= $(JRUBY_CMD) ../tools/run-audits-jena
+RUN_AUDITS_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+RUN_REPORTS ?= $(JRUBY_CMD) ../tools/run-audits-jena
+RUN_REPORTS_OPTS ?= --report --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+
+SENTINELS_DIR ?= $(ARTIFACTS_DIR)/.sentinels
+
+TESTS_DIR ?= tests/consistency
+
+UNSATS_REPORT_FILE ?= tests/consistency/unsats.csv
+UNSAT_PROPS_REPORT_FILE ?= tests/consistency/unsat-props.csv
+UNSAT_PROP_TARGETS_REPORT_FILE ?= tests/consistency/unsat-prop-targets.csv
+UNSAT_PROP_RANGES_REPORT_FILE ?= tests/consistency/unsat-prop-ranges.csv
+UNSAT_SUPS_REPORT_FILE ?= tests/consistency/unsat-sups.csv
+
+UNSAT_ROOTS_REPORT_FILE = tests/consistency/unsat-roots.csv
+
+VALIDATE_OWL ?= $(JRUBY_CMD) -J-Djava.util.logging.config.file=logging.properties ../tools/validate-owl
+VALIDATE_OWL_OPTS ?= --satisfiability
+
+VALIDATE_ROOTS_TEST_FILE ?= $(TESTS_DIR)/validate-roots$(XML_SUFFIX)
+VALIDATE_ROOTS_ID ?= validate-roots
+
+VIEW_STEM ?= imce.jpl.nasa.gov/view/
+
+XML_SUFFIX ?= .xml
+
+ZIP_SUFFIX ?= .zip
+
+tmpfile = $(dir $1).$(notdir $1)
+
+-include $(DEPENDENCIES_FILE)
+
+# 
+# load ontology metadata
+#
+
+<%
+
+  require 'OMFMetadata'
+  
+  # Constants.
+  
+  ENTAILMENTS = {
+	'ClassEntailments' => %w{ AllSubclass },
+	'PropertyEntailments' => %w{ InverseProperty AllSubproperty }
+  }
+  
+  # Load metadata ontology.
+  
+  m_name = ENV['METADATA']
+  m_file = File.open(m_name)
+  raise "couldn't open metadata ontology #{m_name}" unless m_file
+  metadata = OMFMetadata::Instance.new(m_file, @logger)
+  raise "couldn't load metadata ontology" unless metadata
+  
+  # Find exported terminology graphs.
+  
+  exported_graphs = metadata.terminology_graphs.values.select do |i|
+    !i.mutable? && (
+      i.kind_provenance == 'OTIModelLibrary' ||
+      i.kind_provenance == 'OTIProfile'
+    ) && i.ontology_iri != 'http://www.omg.org/spec/UML/20131001/StandardProfile'  # IMCEI-273
+  end
+  warn "#{exported_graphs.length} exported graphs"
+ 
+  # Find imported terminology graphs.
+  
+  imported_graphs = metadata.terminology_graphs.values.select do |i|
+    !i.mutable? && (
+      i.kind_provenance == 'OMFGraphOntology' ||
+      i.kind_provenance == 'W3C'
+    )
+  end
+  warn "#{imported_graphs.length} imported graphs"
+ 
+  # Set file prefixes and suffixes.
+  
+  all_graphs = exported_graphs + imported_graphs
+  all_graphs.each do |g|
+    g.ontologies_prefix = '$(ARTIFACTS_DIR)'
+    g.ontologies_suffix = '$(OWL_SUFFIX)'
+    g.entailments_prefix = '$(ENTAILMENTS_DIR)'
+    g.sentinels_prefix = '$(SENTINELS_DIR)'
+  end
+    
+  # Create location mapping.
+  
+  location_map = metadata.location_map(all_graphs, "#{ENV['PWD']}/$(ARTIFACTS_DIR)",
+  								ENTAILMENTS.keys, "#{ENV['PWD']}/$(ENTAILMENTS_DIR)",
+  								'$(OWL_SUFFIX)')
+  								
+  # Create imports graph.
+  
+  imports_graph = metadata.imports_graph(all_graphs) { |i| true }
+  
+  # Create imports map.
+  
+  imports_map = metadata.imports_map(imports_graph)
+  x = imports_map.inject({}) do |m, o|
+    k, v = *o
+    m[k.uri_provenance] = v.map { |i| i.uri_provenance }
+    m
+  end
+
+  # Find root nodes of imports graph that correspond to exported packages.
+  
+  root_nodes = imports_graph.vertexSet.select do |node|
+    imports_graph.inDegreeOf(node) == 0 &&
+    exported_graphs.include?(node)
+  end
+
+  # Create rules for validating root ontologies.
+  
+  validate_roots_test_file_rule = Makefile::Rule.new('$(VALIDATE_ROOTS_TEST_FILE)')
+  
+  iris = Set.new
+  files = Set.new
+  root_nodes.each do |n|
+    iris << n.ontology_iri
+    iris += imports_map[n].map { |o| o.ontology_iri }
+    files << n.ontology_file
+    files += imports_map[n].map { |o| o.ontology_file }
+  end
+  validate_roots_test_file_rule.prereqs += files 
+  validate_roots_test_file_rule.cmds << "$(call validate_roots,$(VALIDATE_ROOTS_ID),#{iris.to_a.join(' ')})"
+  
+  # Create rules for calculating entailments.
+  
+  entailments_top_rule = Makefile::Rule.new('entailments')
+  entailments_rules = [entailments_top_rule]
+  ENTAILMENTS.each do |type, data|
+    exported_graphs.each do |o|
+      il = imports_map[o]
+      input_iri = o.ontology_iri
+      output_iri = o.entailments_iri(type)
+      target = o.entailments_file(type)
+      entailments_top_rule.prereqs << target
+      rule = Makefile::Rule.new(target)
+      rule.prereqs << o.ontology_file
+      entailments_rules << rule
+      il.each do |i|
+        rule.prereqs << i.ontology_file
+        unless i.ontology_iri == PROJECT_BUNDLE_IRI
+          rule.prereqs << i.entailments_file(type)
+        end
+      end
+      rule.cmds << %Q{$(call do_entailments,#{input_iri},#{output_iri},"#{data.join(' ')}")}
+    end
+  end
+  
+  # Create rules for ontology views.
+  
+  view_graphs = { 'named' => exported_graphs, 'imported' => imported_graphs }
+  
+  views = view_graphs.keys.inject([]) do |m, k|
+    s = OpenStruct.new
+    s.key = k
+    s.graphs = view_graphs[k]
+    s.iri = 'http://' + '$(VIEW_STEM)' + k
+    s.sentinel = '$(SENTINELS_DIR)' + '/' + '$(VIEW_STEM)' + k
+    m << s
+  end
+
+  views_top_rule = Makefile::Rule.new('create-views')
+  views_rules = [views_top_rule]
+  views.each do |view|
+    views_top_rule.prereqs << view.sentinel
+    views_rules << rule = Makefile::Rule.new(view.sentinel)
+    rule.prereqs += view.graphs.inject([]) do |m, g|
+      m << g.ontology_sentinel
+      unless g.ontology_iri == PROJECT_BUNDLE_IRI
+        m += ENTAILMENTS.keys.map { |t| g.entailments_sentinel(t) }
+      end
+      m
+    end
+    iris = view.graphs.inject([]) do |m, g|
+      m << g.ontology_iri
+      unless g.ontology_iri == PROJECT_BUNDLE_IRI
+        m += ENTAILMENTS.keys.map { |t| g.entailments_iri(t) }
+      end
+      m
+    end
+    rule.cmds << %Q{$(call do_view,#{view.iri},#{iris.join(' ')})}
+  end
+%>
+
+#
+# location mapping file
+#
+# The location mapping file is a YAML file that maps ontology IRIs to file IRIs. It is used by the OWL
+# API for ontology loading and retrieval.
+#
+
+.PHONY:	location-mapping
+
+location-mapping: $(LOCATION_MAPPING_FILE)
+
+<%=
+  rule = Makefile::Rule.new('$(LOCATION_MAPPING_FILE)')
+  rule.prereqs << 'Makefile'
+  rule.cmds << "@echo '->' $@"
+  rule.cmds << '@ > $@'
+  rule.cmds += location_map.to_yaml.each_line.inject([]) { |m, o| m << "@echo '#{o.strip}' >> $@"; m }
+  rule
+%>
+
+#
+# rules to extract imported ontologies
+#
+
+define do_extract
+  @echo extract '->' $@
+  @mkdir -p $(dir $@) $(dir $(2))
+  @$(EXTRACT) $(EXTRACT_OPTS) $(1) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  @> $(2)
+endef
+
+<%=
+  rules = []
+  imported_graphs.each do |g|
+    rules << (rule = Makefile::Rule.new(g.ontology_file))
+    rule.cmds << "$(call do_extract,#{g.ontology_iri},#{g.ontology_sentinel})"
+    unless g.ontology_iri == PROJECT_BUNDLE_IRI
+      ENTAILMENTS.keys.each do |t|
+        rules << (rule = Makefile::Rule.new(g.entailments_file(t)))
+        rule.cmds << "$(call do_extract,#{g.entailments_iri(t)},#{g.entailments_sentinel(t)})"
+      end
+    end
+  end
+  rules.join("\n")
+%>
+
+#
+# validate-roots
+#
+
+define validate_roots
+  @echo validate '->' $@
+  @mkdir -p $(dir $@)
+  @$(VALIDATE_OWL) $(VALIDATE_OWL_OPTS) --id $(1) $(2) > $@
+endef
+
+.PHONY: validate-roots
+
+validate-roots:	$(VALIDATE_ROOTS_TEST_FILE)
+
+<%= validate_roots_test_file_rule %>
+
+#
+# entailments
+#
+
+.PHONY:	entailments
+
+define do_entailments
+  @echo entail '->' $@
+  @mkdir -p $(dir $@)
+  @$(ENTAIL) $(ENTAIL_OPTS) --input-iri $(1) --output-iri $(2) --types $(3) $(4) $^ > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+endef
+
+<%= entailments_rules.map { |r| r.to_s }.join("\n") %>
+
+#
+# load-production
+#
+
+define do_load
+  @echo load $(5) '->' $(2) $(4)
+  @mkdir -p $(dir $@)
+  @$(JRUBY_CMD) $(LOAD_REPO) $(LOAD_REPO_OPTS) --imports-file '$(EMPTY_IMPORTS_FILE)' --uri '$(1)' '$(2)' && touch $@
+endef
+
+load-production:	load-ontologies-production
+
+.PHONY: load-ontologies-production
+
+<%=
+  rule = Rule.new('load-ontologies-production')
+  graph_rules = []
+  imports_map.keys.each do |g|
+    rule.prereqs << g.ontology_sentinel
+    graph_rules << graph_rule = Rule.new(g.ontology_sentinel)
+    graph_rule.prereqs << g.ontology_file
+    graph_rule.cmds << "$(call do_load,#{g.ontology_iri},#{g.ontology_file})"
+  end
+  rule.to_s + graph_rules.join
+%>
+
+load-production:	load-entailments-production
+
+.PHONY: load-entailments-production
+
+<%=
+  rule = Rule.new('load-entailments-production')
+  graph_rules = []
+  imports_map.keys.each do |g|
+    unless g.ontology_iri == PROJECT_BUNDLE_IRI
+      ENTAILMENTS.keys.each do |type|
+        rule.prereqs << g.entailments_sentinel(type)
+        graph_rules << graph_rule = Rule.new(g.entailments_sentinel(type))
+        graph_rule.prereqs << g.entailments_file(type)
+        graph_rule.cmds << "$(call do_load,#{g.entailments_iri(type)},#{g.entailments_file(type)})"
+      end
+    end
+  end
+  rule.to_s + graph_rules.join
+%>
+
+#
+# create-views
+#
+
+load-production: create-views
+
+.PHONY: create-views
+
+define do_view
+  @echo create view '->' $@
+  @mkdir -p $(dir $@)
+  @$(CREATE_VIEW) $(CREATE_VIEW_OPTS) $(1) $(2) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+endef
+
+<%=
+  views_rules.join
+%>
+
+#
+# run-audits
+#
+
+.PHONY: run-audits
+
+run-audits:	$(AUDITS_TEST_FILE)
+
+define do_audit
+  @echo audit '->' $@
+  @mkdir -p $(dir $@)
+  @$(RUN_AUDITS) $(RUN_AUDITS_OPTS) $(1) $(2) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+endef
+
+<%=
+  rule = Rule.new('$(AUDITS_TEST_FILE)')
+  iris = []
+  exported_graphs.each do |g|
+    iris << g.ontology_iri
+    rule.prereqs << g.ontology_sentinel
+    rule.prereqs += imports_map[g].map { |i| i.ontology_sentinel }
+    rule.prereqs += views.map { |v| v.sentinel }
+    unless g.ontology_iri == PROJECT_BUNDLE_IRI
+      ENTAILMENTS.keys.each do |type|
+        rule.prereqs << g.entailments_sentinel(type)
+        rule.prereqs += imports_map[g].reject { |i| i.ontology_iri == PROJECT_BUNDLE_IRI}.map { |i| i.entailments_sentinel(type) }
+      end
+    end
+  end
+  rule.cmds << "$(call do_audit,--audit-tree $(AUDITS_TREE),#{iris.join(' ')})"
+  rule
+%>
+
+#
+# run-reports
+#
+
+.PHONY: run-reports
+
+run-reports:	$(REPORTS_TEST_FILE)
+
+define do_report
+  @echo report '->' $@
+  @mkdir -p $(dir $@)
+  @$(RUN_REPORTS) $(RUN_REPORTS_OPTS) $(1) $(2) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+endef
+
+<%=
+  rule = Rule.new('$(REPORTS_TEST_FILE)')
+  iris = []
+  exported_graphs.each do |g|
+    iris << g.ontology_iri
+    rule.prereqs << g.ontology_sentinel
+    rule.prereqs += imports_map[g].map { |i| i.ontology_sentinel }
+    rule.prereqs += views.map { |v| v.sentinel }
+    ENTAILMENTS.keys.each do |type|
+      rule.prereqs << g.entailments_sentinel(type)
+      rule.prereqs += imports_map[g].reject { |i| i.ontology_iri == PROJECT_BUNDLE_IRI}.map { |i| i.entailments_sentinel(type) }
+    end
+  end
+  rule.cmds << "$(call do_report,--audit-tree $(REPORTS_TREE),#{iris.join(' ')})"
+  rule
+%>
+
+#
+# census
+#
+
+.PHONY: census
+
+define do_census
+  @echo census '->' $@
+  @$(OMF_METADATA_CENSUS) $(OMF_METADATA_CENSUS_OPTS) $< > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+endef
+
+census:	<%= c_name = "$(subst $(OWL_SUFFIX),$(CENSUS_SUFFIX),#{m_name})" %>
+
+<%= c_name %>: <%= m_name %>
+	$(call do_census)
+	
+#
+# identify-unsats
+#
+
+.PHONY: identify-unsats
+
+define do_identify_unsats
+  @echo identify-unsats '->' $@
+  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_IRIS_OPTS) $< | \
+  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['METADATA'] %> \
+  	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+endef
+
+identify-unsats: $(UNSATS_REPORT_FILE)
+
+$(UNSATS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
+	$(call do_identify_unsats)
+	
+#
+# identify-unsat-props
+#
+
+.PHONY: identify-unsat-props
+
+define do_identify_unsat_props
+  @echo identify-unsat-props '->' $@
+  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_PROPS_OPTS) $< | \
+  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['METADATA'] %> \
+  	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+endef
+
+identify-unsat-props: $(UNSAT_PROPS_REPORT_FILE)
+
+$(UNSAT_PROPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
+	$(call do_identify_unsat_props)
+	
+#
+# identify-unsat-prop-targets
+#
+
+.PHONY: identify-unsat-prop-targets
+
+define do_identify_unsat_prop_targets
+  @echo identify-unsat-prop-targets '->' $@
+  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_PROP_TARGETS_OPTS) $< | \
+  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['METADATA'] %> \
+  	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+endef
+
+identify-unsat-prop-targets: $(UNSAT_PROP_TARGETS_REPORT_FILE)
+
+$(UNSAT_PROP_TARGETS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
+	$(call do_identify_unsat_prop_targets)
+	
+#
+# identify-unsat-prop-ranges
+#
+
+.PHONY: identify-unsat-prop-ranges
+
+define do_identify_unsat_prop_ranges
+  @echo identify-unsat-prop-ranges '->' $@
+  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_PROP_RANGES_OPTS) $< | \
+  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['METADATA'] %> \
+  	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+endef
+
+identify-unsat-prop-ranges: $(UNSAT_PROP_RANGES_REPORT_FILE)
+
+$(UNSAT_PROP_RANGES_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
+	$(call do_identify_unsat_prop_ranges)
+	
+#
+# identify-unsat-sups
+#
+
+.PHONY: identify-unsat-sups
+
+define do_identify_unsat_sups
+  @echo identify-unsat-sups '->' $@
+  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_SUPS_OPTS) $< | \
+  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['METADATA'] %> \
+  	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+endef
+
+identify-unsat-sups: $(UNSAT_SUPS_REPORT_FILE)
+
+$(UNSAT_SUPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
+	$(call do_identify_unsat_sups)
+	
+#
+# identify-unsat-roots
+#
+
+.PHONY: identify-unsat-roots
+
+define do_identify_unsat_roots
+  @echo identify-unsat-roots '->' $@
+  @$(JRUBY_CMD) $(GET_UNSAT_ROOTS) $(GET_UNSAT_ROOTS_OPTS) $< | \
+  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['METADATA'] %> \
+  	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+endef
+
+identify-unsat-roots: $(UNSAT_ROOTS_REPORT_FILE)
+
+$(UNSAT_ROOTS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
+	$(call do_identify_unsat_roots)
+	
+#
+# Makefile
+#
+
+Makefile: Makefile.erb <%= ENV['METADATA'] %>
+	@make -f Makefile.bootstrap $@ METADATA=<%= ENV['METADATA'] %>
+
+#
+# clean
+#
+
+.PHONY: clean
+
+clean:
+	@rm -rf $(ARTIFACTS_DIR) $(LOCATION_MAPPING_FILE) $(TESTS_DIR) $(AUDITS_DIR)

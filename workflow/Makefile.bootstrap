@@ -1,0 +1,19 @@
+#
+#    $HeadURL$
+#
+#    $LastChangedRevision$
+#    $LastChangedDate$
+#
+#    $LastChangedBy$
+#
+#    Copyright (c) 2009,2010 California Institute of Technology.
+#    All rights reserved.
+#
+
+JRUBY ?= jruby
+JRUBY_CMD ?= $(JRUBY) -J-Xmx4096m --headless
+MAKE_MAKEFILE ?= ../tools/make-makefile
+
+Makefile: Makefile.erb
+	@echo $< '->' $@
+	@$(JRUBY_CMD) $(MAKE_MAKEFILE) $< > .$@ && mv .$@ $@
