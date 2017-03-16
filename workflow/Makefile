@@ -11,7 +11,7 @@
 #
 
 JRUBY ?= jruby
-JRUBY_CMD ?= $(JRUBY) --headless
+JRUBY_CMD ?= $(JRUBY) --headless -J-Xmx16384m 
 MAKE_MAKEFILE ?= $(TOOLS)/tools/make-makefile
 
 FUSEKI_PID ?= $(WORKFLOW)/log/fuseki.pid

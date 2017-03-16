@@ -23,9 +23,9 @@ export WORKFLOW=$(dirname $(pwd))/target/workflow
 # Read/write
 export FUSEKI_BASE=$(dirname $(pwd))/target/run
 
-[ ! -d $WORKFLOW ] && mkdir $WORKFLOW
+[ ! -d $WORKFLOW ] && mkdir -p $WORKFLOW
 
-[ ! -d $WORKFLOW/artifacts ] && mkdir $WORKFLOW/artifacts
+[ ! -d $WORKFLOW/artifacts ] && mkdir -p $WORKFLOW/artifacts
 
 export RUBYLIB=$TOOLS/lib/Application:\
 $TOOLS/lib/Audit:\
