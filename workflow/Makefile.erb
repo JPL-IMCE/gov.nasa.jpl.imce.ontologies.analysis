@@ -1,4 +1,4 @@
-#
+
 #    Copyright (c) 2015 California Institute of Technology.
 #    All rights reserved.
 #
@@ -22,7 +22,7 @@ EMPTY_IMPORTS_FILE ?= empty-imports.yaml
 
 ENTAILMENTS_DIR ?= $(ARTIFACTS_DIR)/entailments
 
-EXTRACT ?= $(JRUBY_CMD) ../tools/extract-jena
+EXTRACT ?= $(JRUBY_CMD) $(TOOLS_DIR)/extract-ontology
 EXTRACT_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
 
 FUSEKI_DIR ?= /opt/jena-fuseki-0.2.7
@@ -30,17 +30,17 @@ FUSEKI_S_DELETE ?= $(FUSEKI_DIR)/s-delete
 FUSEKI_S_GET ?= $(FUSEKI_DIR)/s-get
 FUSEKI_S_PUT ?= $(FUSEKI_DIR)/s-put
 
-GET_UNSATS ?= ../tools/get-unsats
+GET_UNSATS ?= $(TOOLS_DIR)/get-unsats
 GET_UNSAT_PROPS_OPTS ?= --info --get-props
 GET_UNSAT_PROP_TARGETS_OPTS ?= --info --get-prop-targets
 GET_UNSAT_PROP_RANGES_OPTS ?= --get-prop-ranges
 GET_UNSAT_SUPS_OPTS ?= --info --get-sups
 GET_UNSAT_IRIS_OPTS ?= --info
 
-GET_UNSAT_ROOTS ?= ../tools/get-unsat-roots
+GET_UNSAT_ROOTS ?= $(TOOLS_DIR)/get-unsat-roots
 GET_UNSAT_ROOTS_OPTS ?= --info
 
-IRI_TO_MDID ?= ../tools/iri-to-mdid
+IRI_TO_MDID ?= $(TOOLS_DIR)/iri-to-mdid
 IRI_TO_MDID_OPTS ?= --info
 
 JRUBY ?= jruby
@@ -66,7 +66,7 @@ PROFILE_VALIDATION_FILE ?= $(TESTS_DIR)/$(PROFILE_STEM)$(XML_SUFFIX)
 
 PROJECT_BUNDLE_IRI ?= <%= PROJECT_BUNDLE_IRI = 'http://imce.jpl.nasa.gov/foundation/project/project-bundle' %>
 
-PROVENANCE_FILE ?= $(ARTIFACTS_DIR)/OMF2OTIProvenances.json
+PROVENANCE_FILE ?= $(ARTIFACTS_DIR)/OML2OTIProvenances.json
 
 REPORTS_DIR ?= $(ARTIFACTS_DIR)/reports
 REPORTS_TREE ?= ../data/Report/export/europa
@@ -80,6 +80,7 @@ RUN_REPORTS_OPTS ?= --report --host $(JENA_HOST) --port $(JENA_PORT) --dataset $
 SENTINELS_DIR ?= $(ARTIFACTS_DIR)/.sentinels
 
 TESTS_DIR ?= tests/consistency
+TOOLS_DIR ?= $(TOOLS)/tools
 
 UNSATS_REPORT_FILE ?= tests/consistency/unsats.csv
 UNSAT_PROPS_REPORT_FILE ?= tests/consistency/unsat-props.csv
@@ -89,7 +90,7 @@ UNSAT_SUPS_REPORT_FILE ?= tests/consistency/unsat-sups.csv
 
 UNSAT_ROOTS_REPORT_FILE = tests/consistency/unsat-roots.csv
 
-VALIDATE_OWL ?= $(JRUBY_CMD) -J-Djava.util.logging.config.file=logging.properties ../tools/validate-owl
+VALIDATE_OWL ?= $(JRUBY_CMD) -J-Djava.util.logging.config.file=logging.properties $(TOOLS_DIR)/validate-owl
 VALIDATE_OWL_OPTS ?= --satisfiability
 
 VALIDATE_ROOTS_TEST_FILE ?= $(TESTS_DIR)/validate-roots$(XML_SUFFIX)
@@ -128,6 +129,9 @@ tmpfile = $(dir $1).$(notdir $1)
   metadata = OMFMetadata::Instance.new(m_file, @logger)
   raise "couldn't load metadata ontology" unless metadata
   
+  metadata.terminology_graphs.values.each do |g|
+    puts g.ontology_iri
+  end
   # Find exported terminology graphs.
   
   exported_graphs = metadata.terminology_graphs.values.select do |i|
@@ -137,6 +141,9 @@ tmpfile = $(dir $1).$(notdir $1)
     ) && i.ontology_iri != 'http://www.omg.org/spec/UML/20131001/StandardProfile'  # IMCEI-273
   end
   warn "#{exported_graphs.length} exported graphs"
+  exported_graphs.each do |g|
+    puts g.ontology_iri
+  end
  
   # Find imported terminology graphs.
   

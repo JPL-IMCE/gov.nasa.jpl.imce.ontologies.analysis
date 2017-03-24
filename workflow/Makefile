@@ -71,3 +71,18 @@ location-mapping: bootstrap $(WORKFLOW)/.symlinks
 
 validate-roots: location-mapping
 	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} validate-roots)
+
+identify-unsats: validate-roots
+	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} identify-unsats)
+
+identify-unsat-props: validate-roots
+	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} identify-unsat-props)
+
+identify-unsat-prop-targets: validate-roots
+	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} identify-unsat-prop-targets)
+
+identify-unsat-sups: validate-roots
+	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} identify-unsat-sups)
+
+identify-unsat-roots: validate-roots
+	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} identify-unsat-roots)
