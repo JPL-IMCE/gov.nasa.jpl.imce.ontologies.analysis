@@ -89,3 +89,6 @@ identify-unsat-sups: validate-roots
 
 identify-unsat-roots: validate-roots
 	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} identify-unsat-roots)
+
+identify-unsat-func-props: validate-roots
+	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} identify-unsat-func-props)
