@@ -35,6 +35,7 @@ GET_UNSAT_PROPS_OPTS ?= --info --get-props
 GET_UNSAT_PROP_SOURCES_OPTS ?= --info --get-prop-sources
 GET_UNSAT_PROP_TARGETS_OPTS ?= --info --get-prop-targets
 GET_UNSAT_SUPS_OPTS ?= --info --get-sups
+GET_UNSAT_FUNC_PROPS_OPTS ?= --info --get-func-props
 GET_UNSAT_IRIS_OPTS ?= --info
 
 GET_UNSAT_ROOTS ?= $(TOOLS_DIR)/get-unsat-roots
@@ -87,6 +88,7 @@ UNSAT_PROPS_REPORT_FILE ?= tests/consistency/unsat-props.csv
 UNSAT_PROP_SOURCES_REPORT_FILE ?= tests/consistency/unsat-prop-sources.csv
 UNSAT_PROP_TARGETS_REPORT_FILE ?= tests/consistency/unsat-prop-targets.csv
 UNSAT_SUPS_REPORT_FILE ?= tests/consistency/unsat-sups.csv
+UNSAT_FUNC_PROPS_REPORT_FILE = tests/consistency/unsat-func-props.csv
 
 UNSAT_ROOTS_REPORT_FILE = tests/consistency/unsat-roots.csv
 
@@ -593,6 +595,24 @@ identify-unsat-roots: $(UNSAT_ROOTS_REPORT_FILE)
 
 $(UNSAT_ROOTS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 	$(call do_identify_unsat_roots)
+	
+#
+# identify-unsat-func-props
+#
+
+.PHONY: identify-unsat-func-props
+
+define do_identify_unsat_func_props
+  @echo identify-unsat-func-props '->' $@
+  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_FUNC_PROPS_OPTS) $< | \
+  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['METADATA'] %> \
+  	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+endef
+
+identify-unsat-func-props: $(UNSAT_FUNC_PROPS_REPORT_FILE)
+
+$(UNSAT_FUNC_PROPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
+	$(call do_identify_unsat_func_props)
 	
 #
 # Makefile
