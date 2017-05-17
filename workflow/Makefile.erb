@@ -1,5 +1,4 @@
 
-#    Copyright (c) 2015 California Institute of Technology.
 #    All rights reserved.
 #
 
@@ -8,10 +7,18 @@ AUDITS_DIR ?= tests/audits
 AUDITS_TREE ?= ../data/Audit/export/europa
 AUDITS_TEST_FILE ?= $(AUDITS_DIR)/run-audits$(XML_SUFFIX)
 
+BUNDLE_CLOSURE_ABBREV = europa-bundle
+BUNDLE_CLOSURE_BACKBONE_IRI = http://imce.jpl.nasa.gov/backbone/imce.jpl.nasa.gov/project/europa
+BUNDLE_CLOSURE_BACKBONE_ABBREV = europa-bundle-backbone
+BUNDLE_CLOSURE_FILE = $(WORKFLOW)/artifacts/bundles/europa-bundle$(OWL_SUFFIX)
+BUNDLE_CLOSURE_IRI = http://imce.jpl.nasa.gov/project/europa
+BUNDLE_CLOSURE_FILE_IRI = file://$(BUNDLE_CLOSURE_FILE)
+BUNDLE_NAME = europa-bundle
+
 CENSUS_SUFFIX = .census
 
-CREATE_VIEW ?= $(JRUBY_CMD) ../tools/create-view
-CREATE_VIEW_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
+CLOSE_BUNDLE_OPTS ?= --info
 
 DEPENDENCIES_FILE ?= .dependencies
 
@@ -93,7 +100,7 @@ UNSAT_FUNC_PROPS_REPORT_FILE = tests/consistency/unsat-func-props.csv
 UNSAT_ROOTS_REPORT_FILE = tests/consistency/unsat-roots.csv
 
 VALIDATE_OWL ?= $(JRUBY_CMD) -J-Djava.util.logging.config.file=logging.properties $(TOOLS_DIR)/validate-owl
-VALIDATE_OWL_OPTS ?= --satisfiability
+VALIDATE_OWL_OPTS ?= --info --satisfiability
 
 VALIDATE_ROOTS_TEST_FILE ?= $(TESTS_DIR)/validate-roots$(XML_SUFFIX)
 VALIDATE_ROOTS_ID ?= validate-roots
@@ -131,9 +138,6 @@ tmpfile = $(dir $1).$(notdir $1)
   metadata = OMFMetadata::Instance.new(m_file, @logger)
   raise "couldn't load metadata ontology" unless metadata
   
-  metadata.terminology_graphs.values.each do |g|
-    puts g.ontology_iri
-  end
   # Find exported terminology graphs.
   
   exported_graphs = metadata.terminology_graphs.values.select do |i|
@@ -143,9 +147,6 @@ tmpfile = $(dir $1).$(notdir $1)
     ) && i.ontology_iri != 'http://www.omg.org/spec/UML/20131001/StandardProfile'  # IMCEI-273
   end
   warn "#{exported_graphs.length} exported graphs"
-  exported_graphs.each do |g|
-    puts g.ontology_iri
-  end
  
   # Find imported terminology graphs.
   
@@ -172,6 +173,7 @@ tmpfile = $(dir $1).$(notdir $1)
   location_map = metadata.location_map(all_graphs, "#{ENV['PWD']}/$(ARTIFACTS_DIR)",
   								ENTAILMENTS.keys, "#{ENV['PWD']}/$(ENTAILMENTS_DIR)",
   								'$(OWL_SUFFIX)')
+  location_map['$(BUNDLE_CLOSURE_IRI)'] = '$(BUNDLE_CLOSURE_FILE_IRI)'								
   								
   # Create imports graph.
   
@@ -193,9 +195,9 @@ tmpfile = $(dir $1).$(notdir $1)
     exported_graphs.include?(node)
   end
 
-  # Create rules for validating root ontologies.
-  
-  validate_roots_test_file_rule = Makefile::Rule.new('$(VALIDATE_ROOTS_TEST_FILE)')
+  # Create rules for creating bundle closure.
+ 
+  bundle_closure_file_rule = Makefile::Rule.new('$(BUNDLE_CLOSURE_FILE)')
   
   iris = Set.new
   files = Set.new
@@ -205,8 +207,14 @@ tmpfile = $(dir $1).$(notdir $1)
     files << n.ontology_file
     files += imports_map[n].map { |o| o.ontology_file }
   end
-  validate_roots_test_file_rule.prereqs += files 
-  validate_roots_test_file_rule.cmds << "$(call validate_roots,$(VALIDATE_ROOTS_ID),#{iris.to_a.join(' ')})"
+  bundle_closure_file_rule.prereqs += files 
+  bundle_closure_file_rule.cmds << "$(call do_closure,$(BUNDLE_NAME),$(BUNDLE_CLOSURE_IRI),$(BUNDLE_CLOSURE_ABBREV),$(BUNDLE_CLOSURE_BACKBONE_IRI),$(BUNDLE_CLOSURE_BACKBONE_ABBREV),#{iris.to_a.join(' ')})"
+  
+  # Create rules for validating root ontologies.
+ 
+  validate_roots_test_file_rule = Makefile::Rule.new('$(VALIDATE_ROOTS_TEST_FILE)')
+  validate_roots_test_file_rule.prereqs << '$(BUNDLE_CLOSURE_FILE)'
+  validate_roots_test_file_rule.cmds << "$(call validate_roots,$(VALIDATE_ROOTS_ID),$(BUNDLE_CLOSURE_IRI))"
   
   # Create rules for calculating entailments.
   
@@ -232,40 +240,6 @@ tmpfile = $(dir $1).$(notdir $1)
     end
   end
   
-  # Create rules for ontology views.
-  
-  view_graphs = { 'named' => exported_graphs, 'imported' => imported_graphs }
-  
-  views = view_graphs.keys.inject([]) do |m, k|
-    s = OpenStruct.new
-    s.key = k
-    s.graphs = view_graphs[k]
-    s.iri = 'http://' + '$(VIEW_STEM)' + k
-    s.sentinel = '$(SENTINELS_DIR)' + '/' + '$(VIEW_STEM)' + k
-    m << s
-  end
-
-  views_top_rule = Makefile::Rule.new('create-views')
-  views_rules = [views_top_rule]
-  views.each do |view|
-    views_top_rule.prereqs << view.sentinel
-    views_rules << rule = Makefile::Rule.new(view.sentinel)
-    rule.prereqs += view.graphs.inject([]) do |m, g|
-      m << g.ontology_sentinel
-      unless g.ontology_iri == PROJECT_BUNDLE_IRI
-        m += ENTAILMENTS.keys.map { |t| g.entailments_sentinel(t) }
-      end
-      m
-    end
-    iris = view.graphs.inject([]) do |m, g|
-      m << g.ontology_iri
-      unless g.ontology_iri == PROJECT_BUNDLE_IRI
-        m += ENTAILMENTS.keys.map { |t| g.entailments_iri(t) }
-      end
-      m
-    end
-    rule.cmds << %Q{$(call do_view,#{view.iri},#{iris.join(' ')})}
-  end
 %>
 
 #
@@ -348,6 +322,7 @@ endef
 # load-production
 #
 
+
 define do_load
   @echo load $(5) '->' $(2) $(4)
   @mkdir -p $(dir $@)
@@ -391,24 +366,6 @@ load-production:	load-entailments-production
 %>
 
 #
-# create-views
-#
-
-load-production: create-views
-
-.PHONY: create-views
-
-define do_view
-  @echo create view '->' $@
-  @mkdir -p $(dir $@)
-  @$(CREATE_VIEW) $(CREATE_VIEW_OPTS) $(1) $(2) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
-endef
-
-<%=
-  views_rules.join
-%>
-
-#
 # run-audits
 #
 
@@ -429,7 +386,6 @@ endef
     iris << g.ontology_iri
     rule.prereqs << g.ontology_sentinel
     rule.prereqs += imports_map[g].map { |i| i.ontology_sentinel }
-    rule.prereqs += views.map { |v| v.sentinel }
     unless g.ontology_iri == PROJECT_BUNDLE_IRI
       ENTAILMENTS.keys.each do |type|
         rule.prereqs << g.entailments_sentinel(type)
@@ -462,7 +418,6 @@ endef
     iris << g.ontology_iri
     rule.prereqs << g.ontology_sentinel
     rule.prereqs += imports_map[g].map { |i| i.ontology_sentinel }
-    rule.prereqs += views.map { |v| v.sentinel }
     ENTAILMENTS.keys.each do |type|
       rule.prereqs << g.entailments_sentinel(type)
       rule.prereqs += imports_map[g].reject { |i| i.ontology_iri == PROJECT_BUNDLE_IRI}.map { |i| i.entailments_sentinel(type) }
@@ -614,6 +569,21 @@ identify-unsat-func-props: $(UNSAT_FUNC_PROPS_REPORT_FILE)
 $(UNSAT_FUNC_PROPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 	$(call do_identify_unsat_func_props)
 	
+.PHONY:	closure-artifacts
+
+define do_closure
+  @echo closure artifact '->' $@
+  @mkdir -p $(dir $@)
+  @$(CLOSE_BUNDLE) $(CLOSE_BUNDLE_OPTS) \
+    --namespace '$(3) => $(2)' \
+    --namespace '$(5) => $(4)' \
+    --name $(1) --uri $(2) --backbone-disjoints "$(BACKBONE_DISJOINTS)" \
+    --backbone-prefix $(BACKBONE_PREFIX) \
+    $(6) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+endef
+
+<%= bundle_closure_file_rule %>
+
 #
 # Makefile
 #
