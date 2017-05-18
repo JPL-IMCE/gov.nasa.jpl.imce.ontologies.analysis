@@ -32,9 +32,9 @@ pipeline {
             steps {
                 echo "Validating ontologies..."
 
-                sh "workflow/make ${env.WORKFLOW}/Makefile"
-                sh "workflow/make location-mapping"
-                sh "workflow/make validate-roots"
+                sh "cd workflow; /usr/bin/make ${env.WORKFLOW}/Makefile"
+                sh "cd workflow; /usr/bin/make location-mapping"
+                sh "cd workflow; /usr/bin/make validate-roots"
 
                 junit '**/target/*.xml'
             }
