@@ -17,11 +17,7 @@ pipeline {
                 echo "Setting up environment..."
 
                 sh "${tool name: 'default-sbt', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt setupTools setupFuseki"
-
-                sh "cd workflow"
-                sh ". env.sh"
-
-                sh "cd .."
+                sh ". workflow/env.sh"
             }
         }
 
@@ -36,13 +32,9 @@ pipeline {
             steps {
                 echo "Validating ontologies..."
 
-                sh "cd workflow"
-
-                sh "make ${env.WORKFLOW}/Makefile"
-                sh "make location-mapping"
-                sh "make validate-roots"
-
-                sh "cd .."
+                sh "workflow/make ${env.WORKFLOW}/Makefile"
+                sh "workflow/make location-mapping"
+                sh "workflow/make validate-roots"
 
                 junit '**/target/*.xml'
             }
