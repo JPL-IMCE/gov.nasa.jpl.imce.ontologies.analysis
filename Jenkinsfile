@@ -3,10 +3,6 @@
 pipeline {
     agent any
 
-    tools {
-        sbt 'default-sbt'
-    }
-
     stages {
         stage('Checkout') {
             steps {
