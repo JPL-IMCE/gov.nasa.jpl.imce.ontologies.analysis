@@ -3,6 +3,10 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'JRUBY', defaultValue: '/usr/local/Cellar/jruby/jruby-1.7.24/bin/jruby', description: '')
+    }
+
     stages {
         stage('Checkout') {
             steps {
