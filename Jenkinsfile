@@ -32,7 +32,7 @@ pipeline {
             steps {
                 echo "Validating ontologies..."
 
-                sh "cd workflow; . env.sh; /usr/bin/make ${env.WORKFLOW}/Makefile"
+                sh "cd workflow; . env.sh; /usr/bin/make ${WORKFLOW}/Makefile"
                 sh "cd workflow; . env.sh; /usr/bin/make location-mapping"
                 sh "cd workflow; . env.sh; /usr/bin/make validate-roots"
 
