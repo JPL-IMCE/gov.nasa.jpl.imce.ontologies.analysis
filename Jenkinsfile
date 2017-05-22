@@ -3,6 +3,14 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'ONT_METADATA', defaultValue: '', description: 'Ontology metadata file location. Should probably be moved into the build.sbt script and derived from input.')
+    }
+
+    environment {
+        METADATA = "${params.ONT_METADATA}"
+    }
+
     stages {
         stage('Checkout') {
             steps {
