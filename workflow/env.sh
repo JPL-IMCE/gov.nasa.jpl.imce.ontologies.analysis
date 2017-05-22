@@ -44,7 +44,7 @@ $TOOLS/lib/OMFMetadata
 [ -z "$GEM_HOME" ] && echo "GEM_HOME environment not set!"
 # && exit -1
 
-export JRUBY=$(which jruby)
+[ -z "$JRUBY" ] && export JRUBY=$(which jruby)
 echo "# JRUBY=$JRUBY"
 
 export GEM_PATH="${GEM_HOME}:$(dirname $(pwd))"
