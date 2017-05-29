@@ -9,18 +9,18 @@ Running the workflow requires a number of tools to be configured: JRuby, SBT, Ja
 ### JRuby
 Ensure that JRuby 1.7.24 is installed. **Note:** it is important to install version 1.7.24, since there have been incompatible changes to the syntax and supported libraries in later versions.
 
-JRuby 1.7.24 can be fetched from [http://jruby.org/files/downloads/1.7.24/index.html]. Ensure that an environment variable `JRUBY` exists, or that the command `which jruby` directs to the correct installation. 
+JRuby 1.7.24 can be fetched from [here](http://jruby.org/files/downloads/1.7.24/index.html). Ensure that an environment variable `JRUBY` exists, or that the command `which jruby` directs to the correct installation. 
 
 ### Java 8 JDK
-Install the latest version of the Java 8 JDK from Oracle's website ([http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html]). It is recommended not to use OpenJDK. 
+Install the latest version of the Java 8 JDK from [Oracle's website](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). It is recommended **not** to use OpenJDK. 
 
 Java 8 JDK may already be pre-installed on your system. To check if this is the case, run `java -version` in a terminal window.
 
 ### SBT 0.13.x
-Install the latest version of SBT 0.13.x from [http://www.scala-sbt.org/]. **Note:** do NOT use SBT 1.x (currently a pre-release) - there are known differences in syntax that will break part of the workflow.
+Install the latest version of SBT 0.13.x from the [Scala SBT website](http://www.scala-sbt.org/). **Note:** do NOT use SBT 1.x (currently a pre-release / beta) - there are known differences in syntax that will break part of the workflow.
 
 ### Make
-Ensure that "make" is installed on the system. This is typically already the case for most Unix-based systems. Make is part of the GNU Utils (see [https://www.gnu.org/software/make/]). On MacOSX, this may require installing Xcode.
+Ensure that "make" is installed on the system. This is typically already the case for most Unix-based systems. Make is part of the [GNU Utils](https://www.gnu.org/software/make/). On MacOSX, this may require installing Xcode.
 
 ### Note For Running Under Continuous Integration
 When running in a CI system (such as Jenkins), the agent may need to be configured appropriately. For Jenkins:
@@ -45,7 +45,7 @@ make validate-roots
 cd ..
 ```
 
-**Note carefully:** The above assumes that an existing Fuseki instance with the content produced by loadprod (see [https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.workflow]) already exists. This is done to avoid having to reason over basic ontologies again. Run the workflow from [https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.workflow] before this (profile generation step is not necessary)!
+**Note carefully:** The above assumes that an existing Fuseki instance with the content produced by loadprod (see [profile generation workflow](https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.workflow)) already exists. This is done to avoid having to reason over basic ontologies again. Run the workflow described [here](https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.workflow) before executing this workflow (profile generation step is not necessary)!
 
 ### Running Under CI
 For Jenkins, a pipeline script can be found in the root directory. This file is called `Jenkinsfile`.
