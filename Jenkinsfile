@@ -39,10 +39,8 @@ pipeline {
         stage('Validate-Ontologies') {
             steps {
                 echo "Validating ontologies..."
-
-                sh "echo 'WORKSPACE via env ${env.WORKSPACE}'"
-                sh "echo 'WORKSPACE plain ${WORKSPACE}'"
-                sh "echo METADATA: ${METADATA}"
+                echo "METADATA: ${METADATA}"
+                echo "METADATA plain: \$METADATA"
 
                 sh "cd workflow; . env.sh; /usr/bin/make \$WORKFLOW/Makefile"
                 sh "cd workflow; . env.sh; /usr/bin/make location-mapping"
