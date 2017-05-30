@@ -8,7 +8,7 @@ pipeline {
     }
 
     environment {
-        METADATA = "${params.ONT_METADATA}"
+        METADATA = "${env.WORKSPACE}${params.ONT_METADATA}"
     }
 
     stages {
