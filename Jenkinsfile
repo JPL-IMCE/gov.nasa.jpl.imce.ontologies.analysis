@@ -20,6 +20,8 @@ pipeline {
             steps {
                 echo "Setting up environment..."
 
+                sh "cd workflow; . env.sh; /usr/bin/make clean"
+
                 sh "${tool name: 'default-sbt', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt setupTools setupFuseki setupExportResults"
                 sh ". workflow/env.sh"
             }
@@ -41,7 +43,6 @@ pipeline {
                 sh "echo 'METADATA plain: \$METADATA'"
                 echo "METADATA env: ${env.METADATA}"
 
-                sh "cd workflow; . env.sh; /usr/bin/make clean"
                 sh "cd workflow; . env.sh; /usr/bin/make \$WORKFLOW/Makefile"
                 sh "cd workflow; . env.sh; /usr/bin/make location-mapping"
                 sh "cd workflow; . env.sh; /usr/bin/make validate-roots"
