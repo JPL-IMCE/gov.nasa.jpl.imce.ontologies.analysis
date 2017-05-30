@@ -39,7 +39,6 @@ pipeline {
         stage('Validate-Ontologies') {
             steps {
                 echo "Validating ontologies..."
-                echo "METADATA: ${METADATA}"
                 echo "METADATA plain: \$METADATA"
 
                 sh "cd workflow; . env.sh; /usr/bin/make \$WORKFLOW/Makefile"
