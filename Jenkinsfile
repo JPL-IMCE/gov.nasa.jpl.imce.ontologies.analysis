@@ -28,7 +28,7 @@ pipeline {
         stage('Build') {
             steps {
                 sh "${tool name: 'default-sbt', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt compile test:compile"
-                archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+                //archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
             }
         }
 
@@ -38,7 +38,7 @@ pipeline {
             }
             steps {
                 echo "Validating ontologies..."
-                echo "METADATA plain: \$METADATA"
+                sh "echo 'METADATA plain: \$METADATA'"
                 echo "METADATA env: ${env.METADATA}"
 
                 sh "cd workflow; . env.sh; /usr/bin/make \$WORKFLOW/Makefile"
