@@ -4,7 +4,7 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'ONT_METADATA', defaultValue: 'exporter-results/exportedOMFMetadata.owl', description: 'Ontology metadata file location. Should probably be moved into the build.sbt script and derived from input.')
+        string(name: 'ONT_METADATA', defaultValue: '../../exporter-results/exportedOMFMetadata.owl', description: 'Ontology metadata file location. Should probably be moved into the build.sbt script and derived from input.')
     }
 
     stages {
@@ -34,7 +34,7 @@ pipeline {
 
         stage('Validate-Ontologies') {
             environment {
-                METADATA = "${WORKSPACE}/${params.ONT_METADATA}"
+                METADATA = "${params.ONT_METADATA}"
             }
             steps {
                 echo "Validating ontologies..."
