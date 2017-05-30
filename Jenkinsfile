@@ -40,6 +40,9 @@ pipeline {
             steps {
                 echo "Validating ontologies..."
 
+                sh "echo WORKSPACE (via env): ${env.WORKSPACE}"
+                sh "echo WORKSPACE (plain): ${WORKSPACE}"
+                sh "echo WORKSPACE (pwd): ${pwd()}"
                 sh "echo METADATA: \$METADATA"
 
                 sh "cd workflow; . env.sh; /usr/bin/make \$WORKFLOW/Makefile"
