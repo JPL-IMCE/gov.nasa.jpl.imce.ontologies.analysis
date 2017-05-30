@@ -6,6 +6,11 @@ The ontology analysis workflow is intended for validating ontologies based on th
 
 Running the workflow requires a number of tools to be configured: JRuby, SBT, Java 8 (JDK), Make. When using a CI server (such as Jenkins), a number of plugins are recommended to be installed. This is mentioned at the bottom of this section.
 
+### Ruby
+Ensure that Ruby 2.0.0 is installed. **Note:** it is recommended to stick with version 2.0.0 to avoid any potential unforeseen side-effects.
+
+Ruby 2.0.0 can be fetched from, e.g., [here](https://www.ruby-lang.org/en/news/2015/12/16/ruby-2-0-0-p648-released/).
+
 ### JRuby
 Ensure that JRuby 1.7.24 is installed. **Note:** it is important to install version 1.7.24, since there have been incompatible changes to the syntax and supported libraries in later versions.
 
