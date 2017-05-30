@@ -44,6 +44,8 @@ lazy val setupTools = taskKey[File]("Location of the imce ontology tools directo
 
 lazy val setupOntologies = taskKey[File]("Location of the imce ontologies, either extracted from dependencies or symlinked")
 
+lazy val setupExportResults = taskKey[File]("Location of the exporter artifacts")
+
 lazy val artifactZipFile = taskKey[File]("Location of the zip artifact file")
 
 lazy val setupProfileGenerator = taskKey[File]("Location of the profile generator directory extracted from dependencies")
@@ -119,6 +121,12 @@ lazy val imce_ontologies_workflow =
           artifacts
           Artifact("apache-jena-fuseki", "tar.gz", "tar.gz")
       ),
+
+      setupExportResults := {
+        IO.unzip(baseDirectory.value / "exporter-results" / "exportedOMFTBoxOntologies.zip", baseDirectory.value / "target" / "workflow" / "artifacts")
+
+        baseDirectory.value / "exporter-results" / "exportedOMFTBoxOntologies.zip"
+      },
 
       setupTools := {
 
