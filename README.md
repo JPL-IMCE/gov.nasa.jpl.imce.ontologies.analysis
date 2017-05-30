@@ -36,7 +36,7 @@ The above assumes a recommended standard installation of Jenkins 2.4.x, with the
 To run, execute the following commands in a terminal, starting at the project root:
 
 ```sh
-sbt setupTools setupFuseki
+sbt setupTools setupFuseki setupExportResults
 cd workflow
 . env.sh
 make $WORKFLOW/Makefile

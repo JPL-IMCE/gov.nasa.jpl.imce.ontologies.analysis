@@ -20,7 +20,7 @@ pipeline {
             steps {
                 echo "Setting up environment..."
 
-                sh "${tool name: 'default-sbt', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt setupTools setupFuseki"
+                sh "${tool name: 'default-sbt', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt setupTools setupFuseki setupExportResults"
                 sh ". workflow/env.sh"
             }
         }
