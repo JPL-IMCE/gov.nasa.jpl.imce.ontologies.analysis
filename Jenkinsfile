@@ -40,6 +40,8 @@ pipeline {
             steps {
                 echo "Validating ontologies..."
 
+                sh "echo METADATA: \$METADATA"
+
                 sh "cd workflow; . env.sh; /usr/bin/make \$WORKFLOW/Makefile"
                 sh "cd workflow; . env.sh; /usr/bin/make location-mapping"
                 sh "cd workflow; . env.sh; /usr/bin/make validate-roots"
