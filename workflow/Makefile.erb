@@ -1,4 +1,12 @@
-
+#
+#    $HeadURL$
+#
+#    $LastChangedRevision$
+#    $LastChangedDate$
+#
+#    $LastChangedBy$
+#
+#    Copyright (c) 2009,2010 California Institute of Technology.
 #    All rights reserved.
 #
 
@@ -7,8 +15,11 @@ AUDITS_DIR ?= tests/audits
 AUDITS_TREE ?= ../data/Audit/export/europa
 AUDITS_TEST_FILE ?= $(AUDITS_DIR)/run-audits$(XML_SUFFIX)
 
+BACKBONE_DISJOINTS ?= Entity ReifiedObjectProperty ReifiedStructuredDataProperty StructuredDatatype
+BACKBONE_PREFIX ?= http://imce.jpl.nasa.gov/backbone/
+
 BUNDLE_CLOSURE_ABBREV = europa-bundle
-BUNDLE_CLOSURE_BACKBONE_IRI = http://imce.jpl.nasa.gov/backbone/imce.jpl.nasa.gov/project/europa
+BUNDLE_CLOSURE_BACKBONE_IRI = $(BACKBONE_PREFIX)imce.jpl.nasa.gov/project/europa
 BUNDLE_CLOSURE_BACKBONE_ABBREV = europa-bundle-backbone
 BUNDLE_CLOSURE_FILE = $(WORKFLOW)/artifacts/bundles/europa-bundle$(OWL_SUFFIX)
 BUNDLE_CLOSURE_IRI = http://imce.jpl.nasa.gov/project/europa
@@ -18,7 +29,7 @@ BUNDLE_NAME = europa-bundle
 CENSUS_SUFFIX = .census
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
-CLOSE_BUNDLE_OPTS ?= --info
+CLOSE_BUNDLE_OPTS ?= --debug
 
 DEPENDENCIES_FILE ?= .dependencies
 
