@@ -49,7 +49,7 @@ pipeline {
                 sh "cd workflow; . env.sh; /usr/bin/make location-mapping"
                 sh "cd workflow; . env.sh; /usr/bin/make validate-roots"
 
-                junit '**/target/*.xml'
+                junit '**/target/workflow/tests/**/*.xml'
             }
         }
     }
