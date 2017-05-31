@@ -38,6 +38,8 @@ The above assumes a recommended standard installation of Jenkins 2.4.x, with the
 ## Running
 *MISSING: SETTING UP EXPORT RESULTS / RUNNING OML2OWL*
 
+Firstly, ensure that there is an environment variable `METADATA` set that points at the metadata file produced by the SysML 2 OWL exporter.
+
 To run, execute the following commands in a terminal, starting at the project root:
 
 ```sh
