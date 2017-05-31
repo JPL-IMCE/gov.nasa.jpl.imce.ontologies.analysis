@@ -41,7 +41,7 @@ The above assumes a recommended standard installation of Jenkins 2.4.x, with the
 To run, execute the following commands in a terminal, starting at the project root:
 
 ```sh
-sbt setupTools setupFuseki setupExportResults
+sbt setupTools setupExportResults
 cd workflow
 . env.sh
 make $WORKFLOW/Makefile
@@ -50,10 +50,12 @@ make validate-roots
 cd ..
 ```
 
-**Note carefully:** The above assumes that an existing Fuseki instance with the content produced by loadprod (see [profile generation workflow](https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.workflow)) already exists. This is done to avoid having to reason over basic ontologies again. Run the workflow described [here](https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.workflow) before executing this workflow (profile generation step is not necessary)!
+**Note carefully:** The above assumes that an existing Fuseki instance is running on the port specified in workflow/env.sh, and with the content produced by loadprod (see [profile generation workflow](https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.workflow)) already exists. This is done to avoid having to reason over basic ontologies again. Run the workflow described [here](https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.workflow) before executing this workflow (profile generation step is not necessary)!
 
 ### Running Under CI
 For Jenkins, a pipeline script can be found in the root directory. This file is called `Jenkinsfile`.
+
+The expected setup for Fuseki can be found [here](http://www.github.com/jpl-imce/gov.nasa.jpl.imce.ontologies.fuseki/).
 
 ### Examining Results
 Note that results are stored in JUnit format in files under `target/*.xml`. With the JUnit plugin installed, Jenkins can read the analysis results. Note that also Eclipse's JUnit framework (and other JUnit-supporting (test) frameworks) will be able to parse and display the results of the analysis workflow.

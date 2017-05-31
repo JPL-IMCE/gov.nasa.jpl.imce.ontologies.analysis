@@ -38,8 +38,6 @@ lazy val testsResultsSetupTask = taskKey[Unit]("Create the tests results directo
 
 lazy val mdJVMFlags = SettingKey[Seq[String]]("md-jvm-flags", "Extra JVM flags for running MD (e.g., debugging)")
 
-lazy val setupFuseki = taskKey[File]("Location of the apache jena fuseki server extracted from dependencies")
-
 lazy val setupTools = taskKey[File]("Location of the imce ontology tools directory extracted from dependencies")
 
 lazy val setupOntologies = taskKey[File]("Location of the imce ontologies, either extracted from dependencies or symlinked")
@@ -114,12 +112,7 @@ lazy val imce_ontologies_workflow =
         "gov.nasa.jpl.imce" %% "imce.third_party.jena_libraries"
           % "3.4.+"
           artifacts
-          Artifact("imce.third_party.jena_libraries", "zip", "zip", "resource"),
-
-        "org.apache.jena" % "apache-jena-fuseki" % "2.4.1"
-          % "compile"
-          artifacts
-          Artifact("apache-jena-fuseki", "tar.gz", "tar.gz")
+          Artifact("imce.third_party.jena_libraries", "zip", "zip", "resource")
       ),
 
       setupExportResults := {
@@ -159,41 +152,6 @@ lazy val imce_ontologies_workflow =
         }
 
         toolsDir
-      },
-
-      setupFuseki := {
-
-        val slog = streams.value.log
-
-        val fusekiDir = baseDirectory.value / "target" / "fuseki"
-
-        if (fusekiDir.exists()) {
-          slog.warn(s"Apache jena fuseki already extracted in $fusekiDir")
-        }  else {
-          IO.createDirectory(fusekiDir)
-
-          val jfilter: DependencyFilter = new DependencyFilter {
-            def apply(c: String, m: ModuleID, a: Artifact): Boolean =
-              a.extension == "tar.gz" &&
-                m.organization.startsWith("org.apache.jena") &&
-                m.name.startsWith("apache-jena-fuseki")
-          }
-          update.value
-            .matching(jfilter)
-            .headOption
-            .fold[Unit] {
-            slog.error("Cannot find apache-jena-fuseki tar.gz!")
-          } { tgz =>
-            slog.warn(s"found: $tgz")
-            val dir = target.value / "tarball"
-            Process(Seq("tar", "--strip-components", "1", "-zxf", tgz.getAbsolutePath), Some(fusekiDir)).! match {
-              case 0 => ()
-              case n => sys.error("Error extracting " + tgz + ". Exit code: " + n)
-            }
-          }
-        }
-
-        fusekiDir
       },
 
       //makePom := { artifactZipFile; makePom.value },

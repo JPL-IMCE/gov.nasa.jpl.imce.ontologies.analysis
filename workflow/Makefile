@@ -14,12 +14,8 @@ JRUBY ?= jruby
 JRUBY_CMD ?= $(JRUBY) --headless -J-Xmx16384m 
 MAKE_MAKEFILE ?= $(TOOLS)/tools/make-makefile
 
-FUSEKI_PID ?= $(WORKFLOW)/log/fuseki.pid
-FUSEKI_LOG ?= $(WORKFLOW)/log/fuseki.log
-FUSEKI_CONFIG ?= $(WORKFLOW_SOURCES)/etc/fuseki
-
 clean:
-	/bin/rm -rf $(WORKFLOW) $(FUSEKI_BASE)
+	/bin/rm -rf $(WORKFLOW)
 	mkdir $(WORKFLOW)
 	mkdir $(WORKFLOW)/artifacts
 	mkdir $(WORKFLOW)/log
@@ -37,24 +33,10 @@ $(WORKFLOW)/log4j.properties: $(WORKFLOW_SOURCES)/log4j.properties
 $(WORKFLOW)/logging.properties: $(WORKFLOW_SOURCES)/logging.properties
 	cp -p $< $@
 
-.PHONY: start-fuseki stop-fuseki
-
 $(WORKFLOW)/log:
 	mkdir $@
 
-$(FUSEKI_BASE):
-	mkdir $@
-
-start-fuseki: $(WORKFLOW)/log $(FUSEKI_BASE)
-	cp -pv $(ETC)/fuseki/imce-ontologies.ttl $(FUSEKI_BASE)/config.ttl
-	(cd $(FUSEKI_BASE); nohup $(FUSEKI_HOME)/fuseki-server --port=$(JENA_PORT) > $(FUSEKI_LOG) 2>&1 & echo $$! > $(FUSEKI_PID) )
-
-#(cd $(FUSEKI_BASE); nohup $(FUSEKI_HOME)/fuseki-server --port=$(JENA_PORT) --config=$(FUSEKI_BASE)/configuration/imce-ontologies.ttl > $(FUSEKI_LOG) 2>&1 & echo $$! > $(FUSEKI_PID) )
-
-stop-fuseki:
-	[ -f $(FUSEKI_PID) ] && kill -9 `cat $(FUSEKI_PID)` 
-
-bootstrap: $(WORKFLOW)/Makefile start-fuseki
+bootstrap: $(WORKFLOW)/Makefile
 
 $(WORKFLOW)/Makefile: $(WORKFLOW_SOURCES)/Makefile.erb $(WORKFLOW)/logging.properties $(WORKFLOW)/log4j.properties $(WORKFLOW)/Makefile.erb
 	@echo $< '->' $@
