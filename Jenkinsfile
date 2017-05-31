@@ -43,6 +43,8 @@ pipeline {
                 sh "echo 'METADATA plain: \$METADATA'"
                 echo "METADATA env: ${env.METADATA}"
 
+                sh "cd workflow; . env.sh; echo \$JENA_PORT"
+
                 sh "cd workflow; . env.sh; /usr/bin/make \$WORKFLOW/Makefile"
                 sh "cd workflow; . env.sh; /usr/bin/make location-mapping"
                 sh "cd workflow; . env.sh; /usr/bin/make validate-roots"
