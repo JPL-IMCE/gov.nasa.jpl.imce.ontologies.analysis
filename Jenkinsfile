@@ -22,7 +22,7 @@ pipeline {
 
                 sh "cd workflow; . env.sh; /usr/bin/make clean"
 
-                sh "${tool name: 'default-sbt', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt setupTools setupFuseki setupExportResults"
+                sh "${tool name: 'default-sbt', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt setupTools setupExportResults"
                 sh ". workflow/env.sh"
             }
         }
