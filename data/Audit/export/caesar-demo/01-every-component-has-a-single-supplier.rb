@@ -6,17 +6,20 @@ name 'every component has a single supplier'
 
   select distinct ?component ?at_least_one ?exactly_one
 
-  <%= @from_named_clauses_by_group['named'] %>
   <%= @from_clauses_by_group['named'] %>
   <%= @from_clauses_by_group['imported'] %>
   <%= @from_clauses_by_group_by_type['named']['ClassEntailments'] %>
   <%= @from_clauses_by_group_by_type['imported']['ClassEntailments'] %>
+  <%= @from_clauses_by_group_by_type['named']['PropertyEntailments'] %>
+  <%= @from_clauses_by_group_by_type['imported']['PropertyEntailments'] %>
+  <%= @from_clauses_by_group_by_type['named']['InstanceEntailments'] %>
+  <%= @from_clauses_by_group_by_type['imported']['InstanceEntailments'] %>
 
   where {
     
     # find all components in the named ontologies
     
-    graph ?graph { ?component rdf:type <http://imce.jpl.nasa.gov/discipline/mass_management#MComponent> }
+    ?component rdf:type mission:Component
 
     # find up to two suppliers
 

@@ -28,6 +28,8 @@ BUNDLE_NAME = caesar-demo-bundle
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
 CLOSE_BUNDLE_OPTS ?= --export
 
+COMMA := ,
+
 DEPENDENCIES_FILE ?= .dependencies
 
 ENTAIL ?= $(JRUBY_CMD) $(TOOLS_DIR)/entail
@@ -165,7 +167,8 @@ tmpfile = $(dir $1).$(notdir $1)
   
   ENTAILMENTS = {
 	'ClassEntailments' => %w{ AllSubclass },
-	'PropertyEntailments' => %w{ InverseProperty AllSubproperty }
+	'PropertyEntailments' => %w{ InverseProperty AllSubproperty },
+	'InstanceEntailments' => %w{ AllInstance ObjectPropertyValue }
   }
   
   # Load metadata ontology.
@@ -478,7 +481,7 @@ run-audits:	$(AUDITS_TEST_FILE)
 define do_audit
   @echo audit '->' $@
   @mkdir -p $(dir $@)
-  @$(RUN_AUDITS) $(RUN_AUDITS_OPTS) $(1) $(2) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  @$(RUN_AUDITS) $(RUN_AUDITS_OPTS) --entailment-types $(1) $(2) $(3) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 <%=
@@ -496,7 +499,8 @@ endef
       end
     end
   end
-  rule.cmds << "$(call do_audit,--audit-tree $(AUDITS_TREE),#{iris.join(' ')})"
+  types_arg = ENTAILMENTS.keys.join('$(COMMA)')
+  rule.cmds << "$(call do_audit,#{types_arg},--audit-tree $(AUDITS_TREE),#{iris.join(' ')})"
   rule
 %>
 
