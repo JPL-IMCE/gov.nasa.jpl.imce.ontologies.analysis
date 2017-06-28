@@ -25,8 +25,6 @@ BUNDLE_CLOSURE_IRI = http://imce.jpl.nasa.gov/project/caesar-demo
 BUNDLE_CLOSURE_FILE_IRI = file://$(BUNDLE_CLOSURE_FILE)
 BUNDLE_NAME = caesar-demo-bundle
 
-CENSUS_SUFFIX = .census
-
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
 CLOSE_BUNDLE_OPTS ?= --export
 
@@ -71,9 +69,6 @@ LOAD_REPO_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATAS
 LOCATION_MAPPING_FILE ?= location-mapping.yaml
 
 MAKE_MAKEFILE ?= $(TOOLS_DIR)/make-makefile
-
-OMF_METADATA_CENSUS ?= $(JRUBY_CMD) $(TOOLS_DIR)/omf-metadata-census
-OMF_METADATA_CENSUS_OPTS ?= 
 
 OWL_SUFFIX = .owl
 
@@ -483,22 +478,6 @@ endef
   rule
 %>
 
-#
-# census
-#
-
-.PHONY: census
-
-define do_census
-  @echo census '->' $@
-  @$(OMF_METADATA_CENSUS) $(OMF_METADATA_CENSUS_OPTS) $< > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
-endef
-
-census:	<%= c_name = "$(subst $(OWL_SUFFIX),$(CENSUS_SUFFIX),#{m_name})" %>
-
-<%= c_name %>: <%= m_name %>
-	$(call do_census)
-	
 #
 # identify-unsats
 #
