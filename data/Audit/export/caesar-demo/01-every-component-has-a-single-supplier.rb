@@ -14,10 +14,12 @@ name 'every component has a single supplier'
 
   where {
     
-    # find all mission:Components in the named ontologies
+    # find all components in the named ontologies
     
     graph ?graph { ?component rdf:type <http://imce.jpl.nasa.gov/discipline/mass_management#MComponent> }
-    
+
+    # find up to two suppliers
+
     optional {
       ?supplier1 project:supplies ?component .
       optional {
@@ -25,6 +27,8 @@ name 'every component has a single supplier'
         filter(?supplier1 != ?supplier2)
       }
     }
+
+    # set success/failure indicators
 
     bind(bound(?supplier1) as ?at_least_one)
     bind(bound(?supplier1) && !bound(?supplier2) as ?exactly_one)
@@ -35,7 +39,7 @@ name 'every component has a single supplier'
 
 case_name { |r| r.component.to_qname(@namespace_by_prefix) }
   
-# Include the work package name in the failure text.
+# Explain success or failure
 
 predicate do |r|
   if r.exactly_one.true?
