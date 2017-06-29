@@ -46,9 +46,10 @@ To run, execute the following commands in a terminal, starting at the project ro
 sbt setupTools setupExportResults
 cd workflow
 . env.sh
-make $WORKFLOW/Makefile
+make bootstrap
 make location-mapping
 make validate-roots
+make run-audits
 cd ..
 ```
 
