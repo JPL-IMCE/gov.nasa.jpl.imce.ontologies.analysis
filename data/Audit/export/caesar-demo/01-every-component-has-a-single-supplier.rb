@@ -4,7 +4,7 @@ name 'every component has a single supplier'
   
   <%= @namespace_defs %>
 
-  select distinct ?component ?at_least_one ?exactly_one
+  select distinct ?component ?at_least_one ?at_least_two
 
   <%= @from_clauses_by_group['named'] %>
   <%= @from_clauses_by_group['imported'] %>
@@ -34,7 +34,7 @@ name 'every component has a single supplier'
     # set success/failure indicators
 
     bind(bound(?supplier1) as ?at_least_one)
-    bind(bound(?supplier1) && !bound(?supplier2) as ?exactly_one)
+    bind(bound(?supplier2) as ?at_least_two)
   }
 }
 
@@ -45,10 +45,10 @@ case_name { |r| r.component.to_qname(@namespace_by_prefix) }
 # Explain success or failure
 
 predicate do |r|
-  if r.exactly_one.true?
-    [true, nil]
-  elsif r.at_least_one.true?
+  if r.at_least_two.true?
     [false, 'multiple suppliers']
+  elsif r.at_least_one.true?
+    [true, nil]
   else
     [false, 'no supplier']
   end
