@@ -17,13 +17,13 @@ AUDITS_TEST_FILE ?= $(AUDITS_DIR)/run-audits$(XML_SUFFIX)
 BACKBONE_DISJOINTS ?= Entity ReifiedObjectProperty ReifiedStructuredDataProperty StructuredDatatype
 BACKBONE_PREFIX ?= http://imce.jpl.nasa.gov/backbone/
 
-BUNDLE_CLOSURE_ABBREV = caesar-demo-bundle
-BUNDLE_CLOSURE_BACKBONE_IRI = $(BACKBONE_PREFIX)imce.jpl.nasa.gov/project/caesar-demo
-BUNDLE_CLOSURE_BACKBONE_ABBREV = caesar-demo-bundle-backbone
-BUNDLE_CLOSURE_FILE = $(WORKFLOW)/artifacts/bundles/caesar-demo-bundle$(OWL_SUFFIX)
-BUNDLE_CLOSURE_IRI = http://imce.jpl.nasa.gov/project/caesar-demo
+BUNDLE_CLOSURE_ABBREV = export-bundle
+BUNDLE_CLOSURE_BACKBONE_IRI = $(BACKBONE_PREFIX)imce.jpl.nasa.gov/project/$(BUNDLE_CLOSURE_ABBREV)
+BUNDLE_CLOSURE_BACKBONE_ABBREV = $(BUNDLE_CLOSURE_ABBREV)-backbone
+BUNDLE_CLOSURE_FILE = $(WORKFLOW)/artifacts/bundles/$(BUNDLE_CLOSURE_ABBREV)$(OWL_SUFFIX)
+BUNDLE_CLOSURE_IRI = http://imce.jpl.nasa.gov/project/$(BUNDLE_CLOSURE_ABBREV)
 BUNDLE_CLOSURE_FILE_IRI = file://$(BUNDLE_CLOSURE_FILE)
-BUNDLE_NAME = caesar-demo-bundle
+BUNDLE_NAME = $(BUNDLE_CLOSURE_ABBREV)
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
 CLOSE_BUNDLE_OPTS ?= --export
@@ -31,7 +31,7 @@ CLOSE_BUNDLE_OPTS ?= --export
 DEPENDENCIES_FILE ?= .dependencies
 
 ENTAIL ?= $(JRUBY_CMD) $(TOOLS_DIR)/entail
-ENTAIL_OPTS = --info
+ENTAIL_OPTS = 
 
 EMPTY_IMPORTS_FILE ?= empty-imports.yaml
 
@@ -46,18 +46,18 @@ FUSEKI_S_GET ?= $(FUSEKI_DIR)/s-get
 FUSEKI_S_PUT ?= $(FUSEKI_DIR)/s-put
 
 GET_UNSATS ?= $(TOOLS_DIR)/get-unsats
-GET_UNSAT_PROPS_OPTS ?= --info --get-props
-GET_UNSAT_PROP_SOURCES_OPTS ?= --info --get-prop-sources
-GET_UNSAT_PROP_TARGETS_OPTS ?= --info --get-prop-targets
-GET_UNSAT_SUPS_OPTS ?= --info --get-sups
-GET_UNSAT_FUNC_PROPS_OPTS ?= --info --get-func-props
-GET_UNSAT_IRIS_OPTS ?= --info
+GET_UNSAT_PROPS_OPTS ?= --get-props
+GET_UNSAT_PROP_SOURCES_OPTS ?= --get-prop-sources
+GET_UNSAT_PROP_TARGETS_OPTS ?= --get-prop-targets
+GET_UNSAT_SUPS_OPTS ?= --get-sups
+GET_UNSAT_FUNC_PROPS_OPTS ?= --get-func-props
+GET_UNSAT_IRIS_OPTS ?= 
 
 GET_UNSAT_ROOTS ?= $(TOOLS_DIR)/get-unsat-roots
-GET_UNSAT_ROOTS_OPTS ?= --info
+GET_UNSAT_ROOTS_OPTS ?= 
 
 IRI_TO_MDID ?= $(TOOLS_DIR)/iri-to-mdid
-IRI_TO_MDID_OPTS ?= --info
+IRI_TO_MDID_OPTS ?= 
 
 JRUBY ?= jruby
 JRUBY_CMD ?= $(JRUBY) $(JRUBY_OPTS)
@@ -100,7 +100,7 @@ UNSAT_FUNC_PROPS_REPORT_FILE = tests/consistency/unsat-func-props.csv
 UNSAT_ROOTS_REPORT_FILE = tests/consistency/unsat-roots.csv
 
 VALIDATE_OWL ?= $(JRUBY_CMD) -J-Djava.util.logging.config.file=logging.properties $(TOOLS_DIR)/validate-owl
-VALIDATE_OWL_OPTS ?= --info --satisfiability
+VALIDATE_OWL_OPTS ?= --satisfiability
 
 VALIDATE_ROOTS_TEST_FILE ?= $(TESTS_DIR)/validate-roots$(XML_SUFFIX)
 VALIDATE_ROOTS_ID ?= validate-roots
@@ -175,7 +175,12 @@ tmpfile = $(dir $1).$(notdir $1)
   raise "couldn't open metadata ontology #{m_name}" unless m_file
   metadata = JSON.parse(m_file.read)
   raise "couldn't load metadata ontology" unless metadata
-
+  i = 'http://imce.jpl.nasa.gov/oml/oml'
+  f = 'imce.jpl.nasa.gov/oml/oml_Gro'
+  p = 'OMLBundleModuleProvenance'
+  metadata['nodes'] << { 'iri' => i, 'filename' => f, 'provenance' => p } # workaround
+  metadata['edges'] << { 'importing' => 'http://imce.jpl.nasa.gov/foundation/annotation/annotation', 'imported' => i } # workaround
+  
   # Create graph structures.
 
   graphs = metadata['nodes'].inject({}) do |m, n|
@@ -186,7 +191,8 @@ tmpfile = $(dir $1).$(notdir $1)
   # Find exported terminology graphs.
   
   exported_graphs = graphs.values.select do |g|
-    g.provenance == 'OMLExtensionModuleProvenance'
+    g.provenance == 'OMLExtensionModuleProvenance' ||
+      g.provenance == 'OMLOtherModuleProvenance'
   end
   warn "#{exported_graphs.length} exported graphs"
  
@@ -487,7 +493,7 @@ endef
 define do_identify_unsats
   @echo identify-unsats '->' $@
   @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_IRIS_OPTS) $< | \
-  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['METADATA'] %> \
+  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['OWL_METADATA'] %> \
   	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
@@ -505,7 +511,7 @@ $(UNSATS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 define do_identify_unsat_props
   @echo identify-unsat-props '->' $@
   @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_PROPS_OPTS) $< | \
-  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['METADATA'] %> \
+  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['OWL_METADATA'] %> \
   	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
@@ -523,7 +529,7 @@ $(UNSAT_PROPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 define do_identify_unsat_prop_sources
   @echo identify-unsat-prop-sources '->' $@
   @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_PROP_SOURCES_OPTS) $< | \
-  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['METADATA'] %> \
+  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['OWL_METADATA'] %> \
   	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
@@ -541,7 +547,7 @@ $(UNSAT_PROP_SOURCES_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 define do_identify_unsat_prop_targets
   @echo identify-unsat-prop-targets '->' $@
   @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_PROP_TARGETS_OPTS) $< | \
-  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['METADATA'] %> \
+  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['OWL_METADATA'] %> \
   	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
@@ -559,7 +565,7 @@ $(UNSAT_PROP_TARGETS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 define do_identify_unsat_sups
   @echo identify-unsat-sups '->' $@
   @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_SUPS_OPTS) $< | \
-  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['METADATA'] %> \
+  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['OWL_METADATA'] %> \
   	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
@@ -577,7 +583,7 @@ $(UNSAT_SUPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 define do_identify_unsat_roots
   @echo identify-unsat-roots '->' $@
   @$(JRUBY_CMD) $(GET_UNSAT_ROOTS) $(GET_UNSAT_ROOTS_OPTS) $< | \
-  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['METADATA'] %> \
+  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['OWL_METADATA'] %> \
   	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
@@ -595,7 +601,7 @@ $(UNSAT_ROOTS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 define do_identify_unsat_func_props
   @echo identify-unsat-func-props '->' $@
   @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_FUNC_PROPS_OPTS) $< | \
-  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['METADATA'] %> \
+  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['OWL_METADATA'] %> \
   	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
