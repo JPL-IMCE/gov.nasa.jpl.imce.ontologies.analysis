@@ -56,6 +56,7 @@ GET_UNSAT_IRIS_OPTS ?=
 GET_UNSAT_ROOTS ?= $(TOOLS_DIR)/get-unsat-roots
 GET_UNSAT_ROOTS_OPTS ?= 
 
+INPUTS_DIR ?= <%= INPUTS_DIR = 'inputs' %>
 IRI_TO_MDID ?= $(TOOLS_DIR)/iri-to-mdid
 IRI_TO_MDID_OPTS ?= 
 
@@ -122,10 +123,10 @@ tmpfile = $(dir $1).$(notdir $1)
 <%
 
   class OMFGraph
-    def initialize(iri, filename, provenance)
+    def initialize(iri, stem, open)
       @iri = iri
-      @filename = filename
-      @provenance = provenance
+      @stem = stem
+      @open = open
     end
     def ontology_iri
       @iri
@@ -133,29 +134,32 @@ tmpfile = $(dir $1).$(notdir $1)
     def entailments_iri(type)
       "#{@iri}/#{type}"
     end
-    attr_reader :provenance
+    attr_reader :open
     def ontology_file
-      "#{ENV['PWD']}/$(ARTIFACTS_DIR)/#{@filename}$(OWL_SUFFIX)"
+      "#{ENV['PWD']}/$(INPUTS_DIR)/#{@stem}$(OWL_SUFFIX)"
     end
     def ontology_file_iri
       'file://' + ontology_file
     end
     def entailments_file(type)
-      "#{ENV['PWD']}/$(ENTAILMENTS_DIR)/#{@filename}/#{type}$(OWL_SUFFIX)"
+      "#{ENV['PWD']}/$(ENTAILMENTS_DIR)/#{@stem}/#{type}$(OWL_SUFFIX)"
     end
     def entailments_file_iri(type)
       'file://' + entailments_file(type)
     end
     def ontology_sentinel
-      "#{ENV['PWD']}/$(SENTINELS_DIR)/#{@filename}$(OWL_SUFFIX)"
+      "#{ENV['PWD']}/$(SENTINELS_DIR)/#{@stem}$(OWL_SUFFIX)"
     end
     def entailments_sentinel(type)
-      "#{ENV['PWD']}/$(SENTINELS_DIR)/#{@filename}/#{type}$(OWL_SUFFIX)"
+      "#{ENV['PWD']}/$(SENTINELS_DIR)/#{@stem}/#{type}$(OWL_SUFFIX)"
     end
   end
-  
+
+  require 'fileutils'
+  require 'find'
   require 'json'
   require 'jgrapht-core-0.9.0.jar'
+  require 'rexml/document'
 
   java_import 'org.jgrapht.experimental.dag.DirectedAcyclicGraph'
   java_import 'org.jgrapht.graph.DefaultEdge'
@@ -167,40 +171,57 @@ tmpfile = $(dir $1).$(notdir $1)
 	'ClassEntailments' => %w{ AllSubclass },
 	'PropertyEntailments' => %w{ InverseProperty AllSubproperty }
   }
-  
-  # Load metadata ontology.
-  
-  m_name = ENV['METADATA']
-  m_file = File.open(m_name)
-  raise "couldn't open metadata ontology #{m_name}" unless m_file
-  metadata = JSON.parse(m_file.read)
-  raise "couldn't load metadata ontology" unless metadata
-  i = 'http://imce.jpl.nasa.gov/oml/oml'
-  f = 'imce.jpl.nasa.gov/oml/oml_Gro'
-  p = 'OMLBundleModuleProvenance'
-  metadata['nodes'] << { 'iri' => i, 'filename' => f, 'provenance' => p } # workaround
-  metadata['edges'] << { 'importing' => 'http://imce.jpl.nasa.gov/foundation/annotation/annotation', 'imported' => i } # workaround
+
+  # Traverse ontologies and mine metadata.
+
+  metadata = Hash.new { |h, k| h[k] = [] }
+  FileUtils.cd(INPUTS_DIR) do
+    Find.find('.') do |path|
+      next unless File.file?(path) && File.basename(path) =~ /\.owl\z/
+
+      File.open(path) do |f|
+	doc = REXML::Document.new(f)
+
+	ontology = doc.root.get_elements('owl:Ontology').first
+	raise "no ontology for #{path}" unless ontology
+	iri = ontology.attributes['rdf:about']
+	raise "no iri for #{path}" unless iri
+	stem = "#{File.dirname(path)}/#{File.basename(path, '.owl')}"
+	begin
+	  open_attrs = ontology.get_elements('oml:isOMLTerminologyBoxOpen').flat_map { |o| o.get_text.value }
+	rescue
+	  raise "error in open attribute for #{path}"
+	end
+	is_open = open_attrs.any? { |o| o == 'true' }
+	metadata['nodes'] << { 'iri' => iri, 'stem' => stem, 'open' => is_open }
+
+	begin
+	  imports = ontology.get_elements('owl:imports').flat_map { |i| i.attributes['rdf:resource'] }
+	rescue
+	  raise "error in imports for #{path}"
+	end
+	imports.each do |imported|
+	  metadata['edges'] << { 'importing' => iri, 'imported' => imported }
+	end
+      end
+    end
+  end
   
   # Create graph structures.
 
   graphs = metadata['nodes'].inject({}) do |m, n|
-    m[n['iri']] = OMFGraph.new(n['iri'], n['filename'], n['provenance'])
+    m[n['iri']] = OMFGraph.new(n['iri'], n['stem'], n['open'])
     m
   end
   
   # Find exported terminology graphs.
   
-  exported_graphs = graphs.values.select do |g|
-    g.provenance == 'OMLExtensionModuleProvenance' ||
-      g.provenance == 'OMLOtherModuleProvenance'
-  end
+  exported_graphs = graphs.values.reject { |g| g.open }
   warn "#{exported_graphs.length} exported graphs"
  
   # Find imported terminology graphs.
   
-  imported_graphs = graphs.values.select do |g|
-    g.provenance == 'OMLBundleModuleProvenance'
-  end
+  imported_graphs = graphs.values.select { |g| g.open }
   warn "#{imported_graphs.length} imported graphs"
  
   # Set file prefixes and suffixes.
@@ -223,11 +244,9 @@ tmpfile = $(dir $1).$(notdir $1)
   imports_graph = metadata['edges'].inject(DirectedAcyclicGraph.new(DefaultEdge)) do |memo, edge|
     importing = graphs[edge['importing']]
     imported = graphs[edge['imported']]
-    unless imported.provenance == 'OMLBuiltinModuleProvenance'
-      memo.addVertex(importing)						  
-      memo.addVertex(imported)
-      memo.addEdge(importing, imported)
-    end
+    memo.addVertex(importing)						  
+    memo.addVertex(imported)
+    memo.addEdge(importing, imported)
     memo
   end
   TransitiveClosure::INSTANCE.closeSimpleDirectedGraph(imports_graph)
@@ -265,7 +284,7 @@ tmpfile = $(dir $1).$(notdir $1)
     files += imports_map[n].map { |o| o.ontology_file }
   end
   bundle_closure_file_rule.prereqs += files 
-  bundle_closure_file_rule.cmds << "$(call do_closure,$(BUNDLE_NAME),$(BUNDLE_CLOSURE_IRI),$(BUNDLE_CLOSURE_ABBREV),$(BUNDLE_CLOSURE_BACKBONE_IRI),$(BUNDLE_CLOSURE_BACKBONE_ABBREV),#{iris.to_a.join(' ')})"
+  bundle_closure_file_rule.cmds << "$(call do_closure,$(BUNDLE_NAME),$(BUNDLE_CLOSURE_IRI),$(BUNDLE_CLOSURE_ABBREV),$(BUNDLE_CLOSURE_BACKBONE_IRI),$(BUNDLE_CLOSURE_BACKBONE_ABBREV),#{iris.to_a.map { |i| "'#{i}'" }.join(' ')})"
   
   # Create rules for validating root ontologies.
  
@@ -615,7 +634,7 @@ $(UNSAT_FUNC_PROPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 define do_closure
   @echo closure artifact '->' $@
   @mkdir -p $(dir $@)
-  @$(CLOSE_BUNDLE) $(CLOSE_BUNDLE_OPTS) \
+  $(CLOSE_BUNDLE) $(CLOSE_BUNDLE_OPTS) \
     --namespace '$(3) => $(2)' \
     --namespace '$(5) => $(4)' \
     --name $(1) --uri $(2) --backbone-disjoints "$(BACKBONE_DISJOINTS)" \
