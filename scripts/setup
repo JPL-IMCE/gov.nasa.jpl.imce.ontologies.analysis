@@ -4,7 +4,6 @@ CATALOG=oml.catalog.xml
 CONVERT=/Users/sjenkins/Downloads/OMLConverters/bin/omlConverter
 INPUT=oml-input
 OUTPUT=ontologies
-VOCABULARIES=$HOME/git/gov.nasa.jpl.imce.ontologies.public/converted-oml/
 PURL_ORG_OWL=$HOME/git/gov.nasa.jpl.imce.ontologies.public/ontologies/purl.org
 EUROPA=europa.jpl.nasa.gov
 IMCE=imce.jpl.nasa.gov
@@ -51,11 +50,7 @@ fi
 rm -rf $INPUT
 unzip $input -d $INPUT
 
-# overwrite vocabularies from ontologies.public
-
-rsync -a --delete --exclude=europa.jpl.nasa.gov --exclude=$CATALOG $VOCABULARIES $INPUT
-
-# purge omitted ontologies
+# purge omitted IMCE ontologies
 
 rm -rf $OMIT
 
