@@ -9,7 +9,7 @@
 #    All rights reserved.
 #
 
-ARTIFACTS_DIR ?= artifacts
+ARTIFACTS_DIR ?= <%= ARTIFACTS_DIR = 'artifacts' %>
 AUDITS_DIR ?= tests/audits
 AUDITS_TREE ?= ../../data/Audit/export/caesar-demo
 AUDITS_TEST_FILE ?= $(AUDITS_DIR)/run-audits$(XML_SUFFIX)
@@ -38,7 +38,7 @@ EMPTY_IMPORTS_FILE ?= empty-imports.yaml
 ENTAILMENTS_DIR ?= $(ARTIFACTS_DIR)/entailments
 
 EXTRACT ?= $(JRUBY_CMD) $(TOOLS_DIR)/extract-ontology
-EXTRACT_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+EXTRACT_OPTS ?= --host $(JENA_HOST) --port $/Users/sjenkins/Downloads/europa3/europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/$WorkPackageName.oml(JENA_PORT) --dataset $(JENA_DATASET)
 
 FUSEKI_DIR ?= /opt/jena-fuseki-0.2.7
 FUSEKI_S_DELETE ?= $(FUSEKI_DIR)/s-delete
@@ -56,7 +56,6 @@ GET_UNSAT_IRIS_OPTS ?=
 GET_UNSAT_ROOTS ?= $(TOOLS_DIR)/get-unsat-roots
 GET_UNSAT_ROOTS_OPTS ?= 
 
-INPUTS_DIR ?= <%= INPUTS_DIR = 'inputs' %>
 IRI_TO_MDID ?= $(TOOLS_DIR)/iri-to-mdid
 IRI_TO_MDID_OPTS ?= 
 
@@ -71,11 +70,10 @@ LOCATION_MAPPING_FILE ?= location-mapping.yaml
 
 MAKE_MAKEFILE ?= $(TOOLS_DIR)/make-makefile
 
+ONTOLOGIES_DIR ?= <%= ONTOLOGIES_DIR = "#{ARTIFACTS_DIR}/ontologies" %>
 OWL_SUFFIX = .owl
 
 PROJECT_BUNDLE_IRI ?= <%= PROJECT_BUNDLE_IRI = 'http://imce.jpl.nasa.gov/foundation/project/project-bundle' %>
-
-PROVENANCE_FILE ?= $(ARTIFACTS_DIR)/OML2OTIProvenances.json
 
 REPORTS_DIR ?= $(ARTIFACTS_DIR)/reports
 REPORTS_TREE ?= ../data/Report/export/caesar-demo
@@ -136,7 +134,7 @@ tmpfile = $(dir $1).$(notdir $1)
     end
     attr_reader :open
     def ontology_file
-      "#{ENV['PWD']}/$(INPUTS_DIR)/#{@stem}$(OWL_SUFFIX)"
+      "#{ENV['PWD']}/$(ONTOLOGIES_DIR)/#{@stem}$(OWL_SUFFIX)"
     end
     def ontology_file_iri
       'file://' + ontology_file
@@ -160,6 +158,7 @@ tmpfile = $(dir $1).$(notdir $1)
   require 'json'
   require 'jgrapht-core-0.9.0.jar'
   require 'rexml/document'
+  require 'shellwords'
 
   java_import 'org.jgrapht.experimental.dag.DirectedAcyclicGraph'
   java_import 'org.jgrapht.graph.DefaultEdge'
@@ -175,7 +174,7 @@ tmpfile = $(dir $1).$(notdir $1)
   # Traverse ontologies and mine metadata.
 
   metadata = Hash.new { |h, k| h[k] = [] }
-  FileUtils.cd(INPUTS_DIR) do
+  FileUtils.cd(ONTOLOGIES_DIR) do
     Find.find('.') do |path|
       next unless File.file?(path) && File.basename(path) =~ /\.owl\z/
 
@@ -244,7 +243,7 @@ tmpfile = $(dir $1).$(notdir $1)
   imports_graph = metadata['edges'].inject(DirectedAcyclicGraph.new(DefaultEdge)) do |memo, edge|
     importing = graphs[edge['importing']]
     imported = graphs[edge['imported']]
-    memo.addVertex(importing)						  
+    memo.addVertex(importing)
     memo.addVertex(imported)
     memo.addEdge(importing, imported)
     memo
@@ -284,7 +283,7 @@ tmpfile = $(dir $1).$(notdir $1)
     files += imports_map[n].map { |o| o.ontology_file }
   end
   bundle_closure_file_rule.prereqs += files 
-  bundle_closure_file_rule.cmds << "$(call do_closure,$(BUNDLE_NAME),$(BUNDLE_CLOSURE_IRI),$(BUNDLE_CLOSURE_ABBREV),$(BUNDLE_CLOSURE_BACKBONE_IRI),$(BUNDLE_CLOSURE_BACKBONE_ABBREV),#{iris.to_a.map { |i| "'#{i}'" }.join(' ')})"
+  bundle_closure_file_rule.cmds << "$(call do_closure,$(BUNDLE_NAME),$(BUNDLE_CLOSURE_IRI),$(BUNDLE_CLOSURE_ABBREV),$(BUNDLE_CLOSURE_BACKBONE_IRI),$(BUNDLE_CLOSURE_BACKBONE_ABBREV),iris.join(' ')})"
   
   # Create rules for validating root ontologies.
  
