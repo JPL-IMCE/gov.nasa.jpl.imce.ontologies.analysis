@@ -75,5 +75,8 @@ identify-unsat-roots: validate-roots
 identify-unsat-func-props: validate-roots
 	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} identify-unsat-func-props)
 
+load-production: 
+	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} load-production)
+
 run-audits: location-mapping
 	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} run-audits)

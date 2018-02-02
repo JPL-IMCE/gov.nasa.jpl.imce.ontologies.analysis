@@ -4,6 +4,7 @@ CATALOG=oml.catalog.xml
 CONVERT=$HOME/Downloads/OMLConverters/bin/omlConverter
 INPUT=oml-input
 OUTPUT=ontologies
+PURL_ORG_OML=$HOME/git/gov.nasa.jpl.imce.ontologies.public/converted-oml/purl.org
 PURL_ORG_OWL=$HOME/git/gov.nasa.jpl.imce.ontologies.public/ontologies/purl.org
 EUROPA=europa.jpl.nasa.gov
 IMCE=imce.jpl.nasa.gov
@@ -58,6 +59,11 @@ rm -rf $OMIT
 
 sed '/extends.*owl2-mof2/d' $EUROPA_OML > /tmp/europa_oml_$$
 mv /tmp/europa_oml_$$ $EUROPA_OML
+
+# remove problematic purl.org OML
+
+#rsync -a --delete $PURL_ORG_OML $INPUT/purl.org
+#rm $INPUT/purl.org/dc.oml
 
 # convert OML to owl
 
