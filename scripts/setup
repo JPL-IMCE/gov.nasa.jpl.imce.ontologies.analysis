@@ -1,14 +1,20 @@
-#!/bin/sh
+#!/BIN/sh
 
 CATALOG=oml.catalog.xml
 CONVERT=$HOME/Downloads/OMLConverters/bin/omlConverter
 INPUT=oml-input
 OUTPUT=ontologies
-PURL_ORG_OML=$HOME/git/gov.nasa.jpl.imce.ontologies.public/converted-oml/purl.org
-PURL_ORG_OWL=$HOME/git/gov.nasa.jpl.imce.ontologies.public/ontologies/purl.org
-EUROPA=europa.jpl.nasa.gov
+PUBLIC=$HOME/git/gov.nasa.jpl.imce.ontologies.public
+PUBLIC_OML=$PUBLIC/converted-oml
+PUBLIC_OWL=$PUBLIC/ontologies
+PUBLIC_BUNDLES=$PUBLIC/bundles
 IMCE=imce.jpl.nasa.gov
-OMG=www.omg.org
+PROJECT_BUNDLE_PATH=$IMCE/foundation/project
+PURL_ORG=purl.org
+PURL_ORG_OML=$PUBLIC_OML/$PURL_ORG
+PURL_ORG_OWL=$PUBLIC_OWL/$PURL_ORG
+EUROPA=europa.jpl.nasa.gov
+OMG_ORG=www.omg.org
 OMIT="
   $INPUT/$IMCE/math
   $INPUT/$IMCE/skeleton
@@ -18,10 +24,11 @@ OMIT="
   $INPUT/$IMCE/discipline/state-analysis
   $INPUT/$IMCE/foundation/owl2-mof2
   $INPUT/$IMCE/foundation/time
-  $INPUT/$IMCE/$OMG
+  $INPUT/$IMCE/$OMG_ORG
   $INPUT/$IMCE/*/*/*-embedding.oml
 "
 EUROPA_OML="$INPUT/$EUROPA/projects/EuropaClipper/DesignCapture/vocabularyExtensions/EuropaPersonnel/europa.oml"
+W3_ORG=www.w3.org
 
 # run in analysis target/workflow/artifacts
 
@@ -60,10 +67,10 @@ rm -rf $OMIT
 sed '/extends.*owl2-mof2/d' $EUROPA_OML > /tmp/europa_oml_$$
 mv /tmp/europa_oml_$$ $EUROPA_OML
 
-# remove problematic purl.org OML
+# use latest w3.org and purl.org OML files
 
-#rsync -a --delete $PURL_ORG_OML $INPUT/purl.org
-#rm $INPUT/purl.org/dc.oml
+rsync -a --delete $PUBLIC_OML/$W3_ORG/ $INPUT/$W3_ORG
+rsync -a --delete $PUBLIC_OML/$PURL_ORG/ $INPUT/$PURL_ORG
 
 # convert OML to owl
 
@@ -72,3 +79,7 @@ $CONVERT text --cat $INPUT/$CATALOG --output $OUTPUT --owl --clear
 # add purl.org ontologies not created by converter
 
 rsync -a $PURL_ORG_OWL $OUTPUT
+
+# add cached project bundle
+
+rsync -av --exclude='**-embedding*' $PUBLIC_BUNDLES/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH

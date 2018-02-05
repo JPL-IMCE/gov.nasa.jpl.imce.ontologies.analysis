@@ -24,6 +24,7 @@ BUNDLE_CLOSURE_FILE = $(WORKFLOW)/artifacts/bundles/$(BUNDLE_CLOSURE_ABBREV)$(OW
 BUNDLE_CLOSURE_IRI = http://imce.jpl.nasa.gov/project/$(BUNDLE_CLOSURE_ABBREV)
 BUNDLE_CLOSURE_FILE_IRI = file://$(BUNDLE_CLOSURE_FILE)
 BUNDLE_NAME = $(BUNDLE_CLOSURE_ABBREV)
+BUNDLES_DIR = <%= BUNDLES_DIR = "#{ARTIFACTS_DIR}/bundles" %>
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
 CLOSE_BUNDLE_OPTS ?= --export
@@ -38,12 +39,11 @@ EMPTY_IMPORTS_FILE ?= empty-imports.yaml
 ENTAILMENTS_DIR ?= $(ARTIFACTS_DIR)/entailments
 
 EXTRACT ?= $(JRUBY_CMD) $(TOOLS_DIR)/extract-ontology
-EXTRACT_OPTS ?= --host $(JENA_HOST) --port $/Users/sjenkins/Downloads/europa3/europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/$WorkPackageName.oml(JENA_PORT) --dataset $(JENA_DATASET)
+EXTRACT_OPTS ?= --host $(JENA_HOST) --port ($JENA_PORT) --dataset $(JENA_DATASET)
 
-FUSEKI_DIR ?= /opt/jena-fuseki-0.2.7
-FUSEKI_S_DELETE ?= $(FUSEKI_DIR)/s-delete
-FUSEKI_S_GET ?= $(FUSEKI_DIR)/s-get
-FUSEKI_S_PUT ?= $(FUSEKI_DIR)/s-put
+FUSEKI_S_DELETE ?= $(FUSEKI_BIN)/s-delete
+FUSEKI_S_GET ?= $(FUSEKI_BIN)/s-get
+FUSEKI_S_PUT ?= $(FUSEKI_BIN)/s-put
 
 GET_UNSATS ?= $(TOOLS_DIR)/get-unsats
 GET_UNSAT_PROPS_OPTS ?= --get-props
@@ -205,7 +205,7 @@ tmpfile = $(dir $1).$(notdir $1)
       end
     end
   end
-  
+
   # Create graph structures.
 
   graphs = metadata['nodes'].inject({}) do |m, n|
@@ -282,6 +282,9 @@ tmpfile = $(dir $1).$(notdir $1)
     files << n.ontology_file
     files += imports_map[n].map { |o| o.ontology_file }
   end
+  project_bundle_graph = graphs[PROJECT_BUNDLE_IRI]
+  iris << project_bundle_graph.ontology_iri
+  files << project_bundle_graph.ontology_file
   bundle_closure_file_rule.prereqs += files 
   bundle_closure_file_rule.cmds << "$(call do_closure,$(BUNDLE_NAME),$(BUNDLE_CLOSURE_IRI),$(BUNDLE_CLOSURE_ABBREV),$(BUNDLE_CLOSURE_BACKBONE_IRI),$(BUNDLE_CLOSURE_BACKBONE_ABBREV),#{iris.to_a.join(' ')})"
   
@@ -399,9 +402,9 @@ endef
 
 
 define do_load
-  @echo load $(5) '->' $(2) $(4)
+  @echo load $(2) '->' $(1)
   @mkdir -p $(dir $@)
-  @$(JRUBY_CMD) $(LOAD_REPO) $(LOAD_REPO_OPTS) --uri '$(1)' '$(2)' && touch $@
+  @$(RUBY) $(FUSEKI_S_PUT) 'http://$(JENA_HOST):$(JENA_PORT)/$(JENA_DATASET)/data' '$(1)' '$(2)' && touch $@
 endef
 
 load-production:	load-ontologies-production

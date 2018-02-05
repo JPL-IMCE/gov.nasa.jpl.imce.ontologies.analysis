@@ -10,7 +10,8 @@ export WORKFLOW_SOURCES=$(dirname $(pwd))/workflow
 export ONTOLOGIES=$(dirname $(pwd))/target/ontologies
 
 # Read-only
-export FUSEKI_HOME=$(dirname $(pwd))/target/fuseki
+FUSEKI_PROJ="$(dirname $(dirname "$(pwd)"))/gov.nasa.jpl.imce.ontologies.fuseki"
+export FUSEKI_HOME="$FUSEKI_PROJ/target/fuseki"
 
 export FUSEKI_BIN="${FUSEKI_HOME}/bin"
 
