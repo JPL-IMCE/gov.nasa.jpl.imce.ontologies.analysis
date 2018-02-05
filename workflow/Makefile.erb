@@ -36,10 +36,10 @@ ENTAIL_OPTS =
 
 EMPTY_IMPORTS_FILE ?= empty-imports.yaml
 
-ENTAILMENTS_DIR ?= $(ARTIFACTS_DIR)/entailments
+ENTAILMENTS_DIR ?= <%= ENTAILMENTS_DIR = "#{ARTIFACTS_DIR}/entailments" %>
 
 EXTRACT ?= $(JRUBY_CMD) $(TOOLS_DIR)/extract-ontology
-EXTRACT_OPTS ?= --host $(JENA_HOST) --port ($JENA_PORT) --dataset $(JENA_DATASET)
+EXTRACT_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
 
 FUSEKI_S_DELETE ?= $(FUSEKI_BIN)/s-delete
 FUSEKI_S_GET ?= $(FUSEKI_BIN)/s-get
@@ -174,33 +174,51 @@ tmpfile = $(dir $1).$(notdir $1)
   # Traverse ontologies and mine metadata.
 
   metadata = Hash.new { |h, k| h[k] = [] }
-  FileUtils.cd(ONTOLOGIES_DIR) do
-    Find.find('.') do |path|
-      next unless File.file?(path) && File.basename(path) =~ /\.owl\z/
+  [ONTOLOGIES_DIR, ENTAILMENTS_DIR].each do |dir|
+    FileUtils.cd(dir) do
+      Find.find('.') do |path|
+	next unless File.file?(path) && File.basename(path) =~ /\.owl\z/
 
-      File.open(path) do |f|
-	doc = REXML::Document.new(f)
+        iports = nil
+	File.open(path) do |f|
+	  doc = REXML::Document.new(f)
 
-	ontology = doc.root.get_elements('owl:Ontology').first
-	raise "no ontology for #{path}" unless ontology
-	iri = ontology.attributes['rdf:about']
-	raise "no iri for #{path}" unless iri
-	stem = "#{File.dirname(path)}/#{File.basename(path, '.owl')}"
-	begin
-	  open_attrs = ontology.get_elements('oml:isOMLTerminologyBoxOpen').flat_map { |o| o.get_text.value }
-	rescue
-	  raise "error in open attribute for #{path}"
-	end
-	is_open = open_attrs.any? { |o| o == 'true' }
-	metadata['nodes'] << { 'iri' => iri, 'stem' => stem, 'open' => is_open }
+          if dir == ONTOLOGIES_DIR
 
-	begin
-	  imports = ontology.get_elements('owl:imports').flat_map { |i| i.attributes['rdf:resource'] }
-	rescue
-	  raise "error in imports for #{path}"
-	end
-	imports.each do |imported|
-	  metadata['edges'] << { 'importing' => iri, 'imported' => imported }
+            # ontologies
+	    
+	    ontology = doc.root.get_elements('owl:Ontology').first
+	    raise "no ontology for #{path}" unless ontology
+	    iri = ontology.attributes['rdf:about']
+	    raise "no iri for #{path}" unless iri
+	    begin
+	      open_attrs = ontology.get_elements('oml:isOMLTerminologyBoxOpen').flat_map { |o| o.get_text.value }
+	    rescue
+	      raise "error in open attribute for #{path}"
+	    end
+	    begin
+	      imports = ontology.get_elements('owl:imports').flat_map { |i| i.attributes['rdf:resource'] }
+	    rescue
+	      raise "error in imports for #{path}"
+	    end
+	    is_open = open_attrs.any? { |o| o == 'true' }
+	    
+	  else
+
+            # entailments
+	    
+	    iri = 'http://' + path.sub(Regexp.new(Regexp.escape('./')), '')
+	    imports = []
+            is_open = true
+	    
+	  end
+	  
+	  stem = "#{File.dirname(path)}/#{File.basename(path, '.owl')}"
+	  metadata['nodes'] << { 'iri' => iri, 'stem' => stem, 'open' => is_open }
+
+	  imports.each do |imported|
+	    metadata['edges'] << { 'importing' => iri, 'imported' => imported }
+	  end
 	end
       end
     end
@@ -338,32 +356,6 @@ location-mapping: $(LOCATION_MAPPING_FILE)
   rule.cmds << '@ > $@'
   rule.cmds += location_map.to_yaml.each_line.inject([]) { |m, o| m << "@echo '#{o.strip}' >> $@"; m }
   rule
-%>
-
-#
-# rules to extract imported ontologies
-#
-
-define do_extract
-  @echo extract '->' $@
-  @mkdir -p $(dir $@) $(dir $(2))
-  @$(EXTRACT) $(EXTRACT_OPTS) $(1) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
-  @> $(2)
-endef
-
-<%=
-  rules = []
-  imported_graphs.each do |g|
-    rules << (rule = Makefile::Rule.new(g.ontology_file))
-    rule.cmds << "$(call do_extract,#{g.ontology_iri},#{g.ontology_sentinel})"
-    unless g.ontology_iri == PROJECT_BUNDLE_IRI
-      ENTAILMENTS.keys.each do |t|
-        rules << (rule = Makefile::Rule.new(g.entailments_file(t)))
-        rule.cmds << "$(call do_extract,#{g.entailments_iri(t)},#{g.entailments_sentinel(t)})"
-      end
-    end
-  end
-  rules.join("\n")
 %>
 
 #

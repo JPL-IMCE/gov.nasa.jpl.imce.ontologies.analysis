@@ -4,10 +4,12 @@ CATALOG=oml.catalog.xml
 CONVERT=$HOME/Downloads/OMLConverters/bin/omlConverter
 INPUT=oml-input
 OUTPUT=ontologies
+ENTAILMENTS=entailments
 PUBLIC=$HOME/git/gov.nasa.jpl.imce.ontologies.public
 PUBLIC_OML=$PUBLIC/converted-oml
 PUBLIC_OWL=$PUBLIC/ontologies
 PUBLIC_BUNDLES=$PUBLIC/bundles
+PUBLIC_ENTAILMENTS=$PUBLIC/entailments
 IMCE=imce.jpl.nasa.gov
 PROJECT_BUNDLE_PATH=$IMCE/foundation/project
 PURL_ORG=purl.org
@@ -24,10 +26,11 @@ OMIT="
   $INPUT/$IMCE/discipline/state-analysis
   $INPUT/$IMCE/foundation/owl2-mof2
   $INPUT/$IMCE/foundation/time
+  $INPUT/$IMCE/oml/provenance
   $INPUT/$IMCE/$OMG_ORG
   $INPUT/$IMCE/*/*/*-embedding.oml
 "
-EUROPA_OML="$INPUT/$EUROPA/projects/EuropaClipper/DesignCapture/vocabularyExtensions/EuropaPersonnel/europa.oml"
+EUROPA_PERSONNEL="$INPUT/$EUROPA/projects/EuropaClipper/DesignCapture/vocabularyExtensions/EuropaPersonnel/europa.oml"
 W3_ORG=www.w3.org
 
 # run in analysis target/workflow/artifacts
@@ -64,8 +67,7 @@ rm -rf $OMIT
 
 # remove bogus vocabulary extension in europa.oml
 
-sed '/extends.*owl2-mof2/d' $EUROPA_OML > /tmp/europa_oml_$$
-mv /tmp/europa_oml_$$ $EUROPA_OML
+sed -i.bak '/extends.*owl2-mof2/d' $EUROPA_PERSONNEL
 
 # use latest w3.org and purl.org OML files
 
@@ -79,6 +81,10 @@ $CONVERT text --cat $INPUT/$CATALOG --output $OUTPUT --owl --clear
 # add purl.org ontologies not created by converter
 
 rsync -a $PURL_ORG_OWL $OUTPUT
+
+# add cached entailments
+
+rsync -av $PUBLIC_ENTAILMENTS/ $ENTAILMENTS
 
 # add cached project bundle
 
