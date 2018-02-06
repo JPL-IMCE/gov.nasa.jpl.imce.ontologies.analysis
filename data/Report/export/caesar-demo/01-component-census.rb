@@ -4,14 +4,24 @@ query %q{
 
   <%= @namespace_defs %>
 
-  SELECT ?c ?v
+  PREFIX europa: <http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/vocabularyExtensions/MEL_PEL_TEL/europa#>
+  PREFIX MEL_PEL_TEL: <http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/vocabularyExtensions/MEL_PEL_TEL#>
+
+  SELECT ?iri ?name ?hardware ?thermal ?power
   WHERE {
-    ?c rdfs:subClassOf mission:Component .
+
+    ?iri rdfs:subClassOf mission:Component .
+
     OPTIONAL {
-      ?c rdfs:subClassOf [ owl:onProperty base:hasCanonicalName ; owl:hasValue ?v ] 
+      ?iri rdfs:subClassOf [ owl:onProperty base:hasCanonicalName ; owl:hasValue ?name ] 
     }
+
+    bind(exists { ?iri rdfs:subClassOf europa:HardwareComponent } as ?hardware)
+    bind(exists { ?iri rdfs:subClassOf MEL_PEL_TEL:ThermalLoadProduct } as ?thermal)
+    bind(exists { ?iri rdfs:subClassOf europa:PowerLoadComponent } as ?power
+)
     FILTER (
-      REGEX(STR(?c),
+      REGEX(STR(?iri),
         "http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/"
       )
     )
