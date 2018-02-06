@@ -18,8 +18,8 @@ query %q{
 
     bind(exists { ?iri rdfs:subClassOf europa:HardwareComponent } as ?hardware)
     bind(exists { ?iri rdfs:subClassOf MEL_PEL_TEL:ThermalLoadProduct } as ?thermal)
-    bind(exists { ?iri rdfs:subClassOf europa:PowerLoadComponent } as ?power
-)
+    bind(exists { ?iri rdfs:subClassOf europa:PowerLoadComponent } as ?power)
+
     FILTER (
       REGEX(STR(?iri),
         "http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/"
