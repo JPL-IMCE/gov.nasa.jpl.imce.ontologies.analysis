@@ -12,7 +12,7 @@ query %q{
     }
     FILTER (
       REGEX(STR(?c),
-        "http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/EuropaProjectFramework/EuropaWorkBreakdownStructure/"
+        "http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/"
       )
     )
   }

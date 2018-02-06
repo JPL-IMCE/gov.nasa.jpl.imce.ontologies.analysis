@@ -80,9 +80,9 @@ REPORTS_TREE ?= ../../data/Report/export/caesar-demo
 REPORTS_TEST_FILE ?= $(REPORTS_DIR)/run-reports$(ZIP_SUFFIX)
 RUBY ?= $(JRUBY)
 RUN_AUDITS ?= $(JRUBY_CMD) $(TOOLS_DIR)/run-audits-jena
-RUN_AUDITS_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+RUN_AUDITS_OPTS ?= --info --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
 RUN_REPORTS ?= $(JRUBY_CMD) $(TOOLS_DIR)/run-audits-jena
-RUN_REPORTS_OPTS ?= --report --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+RUN_REPORTS_OPTS ?= --info --report --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
 
 SENTINELS_DIR ?= $(ARTIFACTS_DIR)/.sentinels
 
