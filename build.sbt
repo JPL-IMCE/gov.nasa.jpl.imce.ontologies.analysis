@@ -105,7 +105,7 @@ lazy val imce_ontologies_workflow =
       libraryDependencies ++= Seq(
         "gov.nasa.jpl.imce"
           % "gov.nasa.jpl.imce.ontologies.tools"
-          % "1.0.1+"
+          % "1.0.2+"
           artifacts
           Artifact("gov.nasa.jpl.imce.ontologies.tools", "zip", "zip", "resource"),
 
