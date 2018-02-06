@@ -80,3 +80,6 @@ load-production:
 
 run-audits: location-mapping
 	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} run-audits)
+
+run-reports: location-mapping
+	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} run-reports)

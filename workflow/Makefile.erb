@@ -76,7 +76,7 @@ OWL_SUFFIX = .owl
 PROJECT_BUNDLE_IRI ?= <%= PROJECT_BUNDLE_IRI = 'http://imce.jpl.nasa.gov/foundation/project/project-bundle' %>
 
 REPORTS_DIR ?= $(ARTIFACTS_DIR)/reports
-REPORTS_TREE ?= ../data/Report/export/caesar-demo
+REPORTS_TREE ?= ../../data/Report/export/caesar-demo
 REPORTS_TEST_FILE ?= $(REPORTS_DIR)/run-reports$(ZIP_SUFFIX)
 RUBY ?= $(JRUBY)
 RUN_AUDITS ?= $(JRUBY_CMD) $(TOOLS_DIR)/run-audits-jena
@@ -488,9 +488,11 @@ endef
     iris << g.ontology_iri
     rule.prereqs << g.ontology_sentinel
     rule.prereqs += imports_map[g].map { |i| i.ontology_sentinel }
-    ENTAILMENTS.keys.each do |type|
-      rule.prereqs << g.entailments_sentinel(type)
-      rule.prereqs += imports_map[g].reject { |i| i.ontology_iri == PROJECT_BUNDLE_IRI}.map { |i| i.entailments_sentinel(type) }
+    unless g.ontology_iri == PROJECT_BUNDLE_IRI
+      ENTAILMENTS.keys.each do |type|
+	rule.prereqs << g.entailments_sentinel(type)
+	rule.prereqs += imports_map[g].reject { |i| i.ontology_iri == PROJECT_BUNDLE_IRI}.map { |i| i.entailments_sentinel(type) }
+      end
     end
   end
   rule.cmds << "$(call do_report,--audit-tree $(REPORTS_TREE),#{iris.join(' ')})"
