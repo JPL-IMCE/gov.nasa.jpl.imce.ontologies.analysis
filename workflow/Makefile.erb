@@ -15,16 +15,18 @@ AUDITS_TREE ?= ../../data/Audit/export/caesar-demo
 AUDITS_TEST_FILE ?= $(AUDITS_DIR)/run-audits$(XML_SUFFIX)
 
 BACKBONE_DISJOINTS ?= Entity ReifiedObjectProperty ReifiedStructuredDataProperty StructuredDatatype
-BACKBONE_PREFIX ?= http://imce.jpl.nasa.gov/backbone/
+BACKBONE_PREFIX ?= http://imce.jpl.nasa.gov/backbone
 
-BUNDLE_CLOSURE_ABBREV = export-bundle
-BUNDLE_CLOSURE_BACKBONE_IRI = $(BACKBONE_PREFIX)imce.jpl.nasa.gov/project/$(BUNDLE_CLOSURE_ABBREV)
-BUNDLE_CLOSURE_BACKBONE_ABBREV = $(BUNDLE_CLOSURE_ABBREV)-backbone
-BUNDLE_CLOSURE_FILE = $(WORKFLOW)/artifacts/bundles/$(BUNDLE_CLOSURE_ABBREV)$(OWL_SUFFIX)
-BUNDLE_CLOSURE_IRI = http://imce.jpl.nasa.gov/project/$(BUNDLE_CLOSURE_ABBREV)
-BUNDLE_CLOSURE_FILE_IRI = file://$(BUNDLE_CLOSURE_FILE)
-BUNDLE_NAME = $(BUNDLE_CLOSURE_ABBREV)
-BUNDLES_DIR = <%= BUNDLES_DIR = "#{ARTIFACTS_DIR}/bundles" %>
+BUNDLES_DIR ?= <%= BUNDLES_DIR = "#{ARTIFACTS_DIR}/bundles" %>
+BUNDLE_CLOSURE_PROJECT ?= europa
+BUNDLE_CLOSURE_STEM ?= export-bundle
+BUNDLE_CLOSURE_PATH ?= imce.jpl.nasa.gov/project/$(BUNDLE_CLOSURE_PROJECT)/$(BUNDLE_CLOSURE_STEM)
+BUNDLE_CLOSURE_IRI ?= http://$(BUNDLE_CLOSURE_PATH)
+BUNDLE_CLOSURE_BACKBONE_IRI ?= $(BACKBONE_PREFIX)/$(BUNDLE_CLOSURE_PATH)
+BUNDLE_CLOSURE_BACKBONE_ABBREV ?= $(BUNDLE_CLOSURE_STEM)-backbone
+BUNDLE_CLOSURE_FILE ?= $(PWD)/$(BUNDLES_DIR)/$(BUNDLE_CLOSURE_PATH)$(OWL_SUFFIX)
+BUNDLE_CLOSURE_FILE_IRI ?= file://$(BUNDLE_CLOSURE_FILE)
+BUNDLE_NAME ?= $(BUNDLE_CLOSURE_STEM)
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
 CLOSE_BUNDLE_OPTS ?= --export
@@ -99,7 +101,7 @@ UNSAT_FUNC_PROPS_REPORT_FILE = tests/consistency/unsat-func-props.csv
 UNSAT_ROOTS_REPORT_FILE = tests/consistency/unsat-roots.csv
 
 VALIDATE_OWL ?= $(JRUBY_CMD) -J-Djava.util.logging.config.file=logging.properties $(TOOLS_DIR)/validate-owl
-VALIDATE_OWL_OPTS ?= --satisfiability
+VALIDATE_OWL_OPTS ?= --debug --satisfiability
 
 VALIDATE_ROOTS_TEST_FILE ?= $(TESTS_DIR)/validate-roots$(XML_SUFFIX)
 VALIDATE_ROOTS_ID ?= validate-roots
@@ -174,51 +176,35 @@ tmpfile = $(dir $1).$(notdir $1)
   # Traverse ontologies and mine metadata.
 
   metadata = Hash.new { |h, k| h[k] = [] }
-  [ONTOLOGIES_DIR, ENTAILMENTS_DIR].each do |dir|
-    FileUtils.cd(dir) do
-      Find.find('.') do |path|
-	next unless File.file?(path) && File.basename(path) =~ /\.owl\z/
+  FileUtils.cd(ONTOLOGIES_DIR) do
+    Find.find('.') do |path|
+      next unless File.file?(path) && File.basename(path) =~ /\.owl\z/
 
-        iports = nil
-	File.open(path) do |f|
-	  doc = REXML::Document.new(f)
+      iports = nil
+      File.open(path) do |f|
+	doc = REXML::Document.new(f)
 
-          if dir == ONTOLOGIES_DIR
+	ontology = doc.root.get_elements('owl:Ontology').first
+	raise "no ontology for #{path}" unless ontology
+	iri = ontology.attributes['rdf:about']
+	raise "no iri for #{path}" unless iri
+	begin
+	  open_attrs = ontology.get_elements('oml:isOMLTerminologyBoxOpen').flat_map { |o| o.get_text.value }
+	rescue
+	  raise "error in open attribute for #{path}"
+	end
+	begin
+	  imports = ontology.get_elements('owl:imports').flat_map { |i| i.attributes['rdf:resource'] }
+	rescue
+	  raise "error in imports for #{path}"
+	end
+	is_open = open_attrs.any? { |o| o == 'true' }
 
-            # ontologies
-	    
-	    ontology = doc.root.get_elements('owl:Ontology').first
-	    raise "no ontology for #{path}" unless ontology
-	    iri = ontology.attributes['rdf:about']
-	    raise "no iri for #{path}" unless iri
-	    begin
-	      open_attrs = ontology.get_elements('oml:isOMLTerminologyBoxOpen').flat_map { |o| o.get_text.value }
-	    rescue
-	      raise "error in open attribute for #{path}"
-	    end
-	    begin
-	      imports = ontology.get_elements('owl:imports').flat_map { |i| i.attributes['rdf:resource'] }
-	    rescue
-	      raise "error in imports for #{path}"
-	    end
-	    is_open = open_attrs.any? { |o| o == 'true' }
-	    
-	  else
+	stem = "#{File.dirname(path)}/#{File.basename(path, '.owl')}"
+	metadata['nodes'] << { 'iri' => iri, 'stem' => stem, 'open' => is_open }
 
-            # entailments
-	    
-	    iri = 'http://' + path.sub(Regexp.new(Regexp.escape('./')), '')
-	    imports = []
-            is_open = true
-	    
-	  end
-	  
-	  stem = "#{File.dirname(path)}/#{File.basename(path, '.owl')}"
-	  metadata['nodes'] << { 'iri' => iri, 'stem' => stem, 'open' => is_open }
-
-	  imports.each do |imported|
-	    metadata['edges'] << { 'importing' => iri, 'imported' => imported }
-	  end
+	imports.each do |imported|
+	  metadata['edges'] << { 'importing' => iri, 'imported' => imported }
 	end
       end
     end
@@ -249,9 +235,6 @@ tmpfile = $(dir $1).$(notdir $1)
   
   location_map = graphs.values.inject({}) do |m, g|
     m[g.ontology_iri] = g.ontology_file_iri
-    ENTAILMENTS.keys.each do |k|
-      m[g.entailments_iri(k)] = g.entailments_file_iri(k)
-    end
     m
   end
   location_map['$(BUNDLE_CLOSURE_IRI)'] = '$(BUNDLE_CLOSURE_FILE_IRI)'
@@ -287,6 +270,7 @@ tmpfile = $(dir $1).$(notdir $1)
     imports_graph.inDegreeOf(node) == 0 &&
     exported_graphs.include?(node)
   end
+  warn "#{root_nodes.length} root graphs"
 
   # Create rules for creating bundle closure.
  
@@ -304,7 +288,7 @@ tmpfile = $(dir $1).$(notdir $1)
   iris << project_bundle_graph.ontology_iri
   files << project_bundle_graph.ontology_file
   bundle_closure_file_rule.prereqs += files 
-  bundle_closure_file_rule.cmds << "$(call do_closure,$(BUNDLE_NAME),$(BUNDLE_CLOSURE_IRI),$(BUNDLE_CLOSURE_ABBREV),$(BUNDLE_CLOSURE_BACKBONE_IRI),$(BUNDLE_CLOSURE_BACKBONE_ABBREV),#{iris.to_a.join(' ')})"
+  bundle_closure_file_rule.cmds << "$(call do_closure,$(BUNDLE_NAME),$(BUNDLE_CLOSURE_IRI),$(BUNDLE_CLOSURE_STEM),$(BUNDLE_CLOSURE_BACKBONE_IRI),$(BUNDLE_CLOSURE_BACKBONE_ABBREV),#{iris.to_a.join(' ')})"
   
   # Create rules for validating root ontologies.
  
@@ -317,8 +301,7 @@ tmpfile = $(dir $1).$(notdir $1)
   entailments_top_rule = Makefile::Rule.new('entailments')
   entailments_rules = [entailments_top_rule]
   ENTAILMENTS.each do |type, data|
-    exported_graphs.each do |o|
-      il = imports_map[o]
+    root_nodes.each do |o|
       input_iri = o.ontology_iri
       output_iri = o.entailments_iri(type)
       target = o.entailments_file(type)
@@ -326,12 +309,6 @@ tmpfile = $(dir $1).$(notdir $1)
       rule = Makefile::Rule.new(target)
       rule.prereqs << o.ontology_file
       entailments_rules << rule
-      il.each do |i|
-        rule.prereqs << i.ontology_file
-        unless i.ontology_iri == PROJECT_BUNDLE_IRI
-          rule.prereqs << i.entailments_file(type)
-        end
-      end
       rule.cmds << %Q{$(call do_entailments,#{input_iri},#{output_iri},"#{data.join(' ')}")}
     end
   end
@@ -422,14 +399,12 @@ load-production:	load-entailments-production
 <%=
   rule = Rule.new('load-entailments-production')
   graph_rules = []
-  imports_map.keys.each do |g|
-    unless g.ontology_iri == PROJECT_BUNDLE_IRI
-      ENTAILMENTS.keys.each do |type|
-        rule.prereqs << g.entailments_sentinel(type)
-        graph_rules << graph_rule = Rule.new(g.entailments_sentinel(type))
-        graph_rule.prereqs << g.entailments_file(type)
-        graph_rule.cmds << "$(call do_load,#{g.entailments_iri(type)},#{g.entailments_file(type)})"
-      end
+  root_nodes.each do |g|
+    ENTAILMENTS.keys.each do |type|
+      rule.prereqs << g.entailments_sentinel(type)
+      graph_rules << graph_rule = Rule.new(g.entailments_sentinel(type))
+      graph_rule.prereqs << g.entailments_file(type)
+      graph_rule.cmds << "$(call do_load,#{g.entailments_iri(type)},#{g.entailments_file(type)})"
     end
   end
   rule.to_s + graph_rules.join
