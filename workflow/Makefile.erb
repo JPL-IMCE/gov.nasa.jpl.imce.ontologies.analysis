@@ -265,7 +265,7 @@ tmpfile = $(dir $1).$(notdir $1)
     m[g.ontology_iri] = g.ontology_file_iri
     m
   end
-  location_map['$(BUNDLE_CLOSURE_IRI)'] = '$(BUNDLE_CLOSURE_FILE_IRI)'
+  location_map[bundle_closure_graph.ontology_iri] = bundle_closure_graph.ontology_file_iri
   								
   # Create imports graph.
   
@@ -283,16 +283,17 @@ tmpfile = $(dir $1).$(notdir $1)
   ig = imports_graph.dup
   TransitiveClosure::INSTANCE.closeSimpleDirectedGraph(ig)
   root_nodes = ig.vertexSet.select do |node|
-    imports_graph.inDegreeOf(node) == 0 &&
+    ig.inDegreeOf(node) == 0 &&
     exported_graphs.include?(node)
   end
   warn "#{root_nodes.length} root graphs"
 
   # Create imports relationships for export bundle
 
+  raise "bad vertex #{bundle_closure_graph.inspect}" unless OMFBundleGraph === bundle_closure_graph
   imports_graph.addVertex(bundle_closure_graph)
   root_nodes.each do |node|
-    imports_graph.addVertex(node)
+    raise "bad edge target #{node.inspect}" unless OMFGraph === node
     imports_graph.addEdge(bundle_closure_graph, node)
   end
   
@@ -306,28 +307,27 @@ tmpfile = $(dir $1).$(notdir $1)
   iter = imports_graph.iterator
   while iter.hasNext
     source = iter.next
+    raise "bad source #{source.inspect}" unless OMFGraph === source
     imports_map[source] = imports_graph.edgesOf(source).map do |e|
       imports_graph.getEdgeTarget(e)
     end.reject do |target|
       target == source
     end
+    bad = imports_map[source].reject { |i| OMFGraph === i }
+    raise "bad imports for #{source.ontology_iri}: #{bad.inspect}" unless bad.empty?
   end
 
   # Create rules for creating bundle closure.
  
-  bundle_closure_file_rule = Makefile::Rule.new('$(BUNDLE_CLOSURE_FILE)')
+  bundle_closure_file_rule = Makefile::Rule.new(bundle_closure_graph.ontology_file)
   
-  iris = Set.new
-  files = Set.new
-  root_nodes.each do |n|
-    iris << n.ontology_iri
-    iris += imports_map[n].map { |o| o.ontology_iri }
-    files << n.ontology_file
-    files += imports_map[n].map { |o| o.ontology_file }
-  end
+  iris = imports_map[bundle_closure_graph].map { |o| o.ontology_iri }
+  files = imports_map[bundle_closure_graph].map { |o| o.ontology_file }
+  
   project_bundle_graph = graphs[PROJECT_BUNDLE_IRI]
   iris << project_bundle_graph.ontology_iri
   files << project_bundle_graph.ontology_file
+  
   bundle_closure_file_rule.prereqs += files 
   bundle_closure_file_rule.cmds << "$(call do_closure,#{bundle_closure_graph.name},#{bundle_closure_graph.ontology_iri}," +
                                    "#{bundle_closure_graph.abbrev},#{bundle_closure_graph.backbone_iri}," +
@@ -336,8 +336,8 @@ tmpfile = $(dir $1).$(notdir $1)
   # Create rules for validating root ontologies.
  
   validate_roots_test_file_rule = Makefile::Rule.new('$(VALIDATE_ROOTS_TEST_FILE)')
-  validate_roots_test_file_rule.prereqs << '$(BUNDLE_CLOSURE_FILE)'
-  validate_roots_test_file_rule.cmds << "$(call validate_roots,$(VALIDATE_ROOTS_ID),$(BUNDLE_CLOSURE_IRI))"
+  validate_roots_test_file_rule.prereqs << bundle_closure_graph.ontology_file
+  validate_roots_test_file_rule.cmds << "$(call validate_roots,$(VALIDATE_ROOTS_ID),#{bundle_closure_graph.ontology_iri})"
   
   # Create rules for calculating entailments.
   
