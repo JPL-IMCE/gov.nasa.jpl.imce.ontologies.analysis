@@ -344,7 +344,7 @@ tmpfile = $(dir $1).$(notdir $1)
   entailments_top_rule = Makefile::Rule.new('entailments')
   entailments_rules = [entailments_top_rule]
   ENTAILMENTS.each do |type, data|
-    root_nodes.each do |o|
+    [bundle_closure_graph].each do |o|
       input_iri = o.ontology_iri
       output_iri = o.entailments_iri(type)
       target = o.entailments_file(type)
@@ -442,7 +442,7 @@ load-production:	load-entailments-production
 <%=
   rule = Rule.new('load-entailments-production')
   graph_rules = []
-  root_nodes.each do |g|
+  [bundle_closure_graph].each do |g|
     ENTAILMENTS.keys.each do |type|
       rule.prereqs << g.entailments_sentinel(type)
       graph_rules << graph_rule = Rule.new(g.entailments_sentinel(type))
