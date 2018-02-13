@@ -20,13 +20,6 @@ BACKBONE_PREFIX ?= http://imce.jpl.nasa.gov/backbone
 BUNDLES_DIR ?= <%= BUNDLES_DIR = "#{ARTIFACTS_DIR}/bundles" %>
 BUNDLE_CLOSURE_PROJECT ?= europa
 BUNDLE_CLOSURE_STEM ?= export-bundle
-BUNDLE_CLOSURE_PATH ?= imce.jpl.nasa.gov/project/$(BUNDLE_CLOSURE_PROJECT)/$(BUNDLE_CLOSURE_STEM)
-BUNDLE_CLOSURE_IRI ?= http://$(BUNDLE_CLOSURE_PATH)
-BUNDLE_CLOSURE_BACKBONE_IRI ?= $(BACKBONE_PREFIX)/$(BUNDLE_CLOSURE_PATH)
-BUNDLE_CLOSURE_BACKBONE_ABBREV ?= $(BUNDLE_CLOSURE_STEM)-backbone
-BUNDLE_CLOSURE_FILE ?= $(PWD)/$(BUNDLES_DIR)/$(BUNDLE_CLOSURE_PATH)$(OWL_SUFFIX)
-BUNDLE_CLOSURE_FILE_IRI ?= file://$(BUNDLE_CLOSURE_FILE)
-BUNDLE_NAME ?= $(BUNDLE_CLOSURE_STEM)
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
 CLOSE_BUNDLE_OPTS ?= --export
@@ -123,10 +116,11 @@ tmpfile = $(dir $1).$(notdir $1)
 <%
 
   class OMFGraph
-    def initialize(iri, stem, open)
+    def initialize(iri, stem, open, o_dir)
       @iri = iri
       @stem = stem
       @open = open
+      @o_dir = o_dir
     end
     def ontology_iri
       @iri
@@ -136,7 +130,7 @@ tmpfile = $(dir $1).$(notdir $1)
     end
     attr_reader :open
     def ontology_file
-      "#{ENV['PWD']}/$(ONTOLOGIES_DIR)/#{@stem}$(OWL_SUFFIX)"
+      "#{ENV['PWD']}/#{@o_dir}/#{@stem}$(OWL_SUFFIX)"
     end
     def ontology_file_iri
       'file://' + ontology_file
@@ -152,6 +146,35 @@ tmpfile = $(dir $1).$(notdir $1)
     end
     def entailments_sentinel(type)
       "#{ENV['PWD']}/$(SENTINELS_DIR)/#{@stem}/#{type}$(OWL_SUFFIX)"
+    end
+  end
+  class OMFOntologyGraph < OMFGraph
+    def initialize(iri, stem, open)
+      super(iri, stem, open, '$(ONTOLOGIES_DIR)')
+    end
+  end
+  class OMFBundleGraph < OMFGraph
+    def initialize(stem, project)
+      @project = project
+      super(ontology_iri, stem, false, '$(BUNDLES_DIR)')
+    end
+    def ontology_iri
+      'http://' + path
+    end
+    def abbrev
+      @stem
+    end
+    def name
+      @stem
+    end
+    def path
+      "imce.jpl.nasa.gov/project/#{@project}/#{@stem}"
+    end
+    def backbone_iri
+      "$(BACKBONE_PREFIX)/#{path}"
+    end
+    def backbone_abbrev
+      @stem + '-backbone'
     end
   end
 
@@ -213,9 +236,14 @@ tmpfile = $(dir $1).$(notdir $1)
   # Create graph structures.
 
   graphs = metadata['nodes'].inject({}) do |m, n|
-    m[n['iri']] = OMFGraph.new(n['iri'], n['stem'], n['open'])
+    m[n['iri']] = OMFOntologyGraph.new(n['iri'], n['stem'], n['open'])
     m
   end
+
+  # Add graph for export bundle.
+  
+  bundle_closure_graph = OMFBundleGraph.new('$(BUNDLE_CLOSURE_STEM)', '$(BUNDLE_CLOSURE_PROJECT)')
+  graphs[bundle_closure_graph.ontology_iri] = bundle_closure_graph
   
   # Find exported terminology graphs.
   
@@ -249,6 +277,27 @@ tmpfile = $(dir $1).$(notdir $1)
     memo.addEdge(importing, imported)
     memo
   end
+
+  # Find root nodes of imports graph that correspond to exported packages.
+  
+  ig = imports_graph.dup
+  TransitiveClosure::INSTANCE.closeSimpleDirectedGraph(ig)
+  root_nodes = ig.vertexSet.select do |node|
+    imports_graph.inDegreeOf(node) == 0 &&
+    exported_graphs.include?(node)
+  end
+  warn "#{root_nodes.length} root graphs"
+
+  # Create imports relationships for export bundle
+
+  imports_graph.addVertex(bundle_closure_graph)
+  root_nodes.each do |node|
+    imports_graph.addVertex(node)
+    imports_graph.addEdge(bundle_closure_graph, node)
+  end
+  
+  # Form transitive closure of imports_graph.
+  
   TransitiveClosure::INSTANCE.closeSimpleDirectedGraph(imports_graph)
 												      
   # Create imports map.
@@ -263,14 +312,6 @@ tmpfile = $(dir $1).$(notdir $1)
       target == source
     end
   end
-
-  # Find root nodes of imports graph that correspond to exported packages.
-  
-  root_nodes = imports_graph.vertexSet.select do |node|
-    imports_graph.inDegreeOf(node) == 0 &&
-    exported_graphs.include?(node)
-  end
-  warn "#{root_nodes.length} root graphs"
 
   # Create rules for creating bundle closure.
  
@@ -288,7 +329,9 @@ tmpfile = $(dir $1).$(notdir $1)
   iris << project_bundle_graph.ontology_iri
   files << project_bundle_graph.ontology_file
   bundle_closure_file_rule.prereqs += files 
-  bundle_closure_file_rule.cmds << "$(call do_closure,$(BUNDLE_NAME),$(BUNDLE_CLOSURE_IRI),$(BUNDLE_CLOSURE_STEM),$(BUNDLE_CLOSURE_BACKBONE_IRI),$(BUNDLE_CLOSURE_BACKBONE_ABBREV),#{iris.to_a.join(' ')})"
+  bundle_closure_file_rule.cmds << "$(call do_closure,#{bundle_closure_graph.name},#{bundle_closure_graph.ontology_iri}," +
+                                   "#{bundle_closure_graph.abbrev},#{bundle_closure_graph.backbone_iri}," +
+				   "#{bundle_closure_graph.backbone_abbrev},#{iris.to_a.join(' ')})"
   
   # Create rules for validating root ontologies.
  
