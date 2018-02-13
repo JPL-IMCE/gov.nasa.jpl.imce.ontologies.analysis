@@ -94,7 +94,7 @@ UNSAT_FUNC_PROPS_REPORT_FILE = tests/consistency/unsat-func-props.csv
 UNSAT_ROOTS_REPORT_FILE = tests/consistency/unsat-roots.csv
 
 VALIDATE_OWL ?= $(JRUBY_CMD) -J-Djava.util.logging.config.file=logging.properties $(TOOLS_DIR)/validate-owl
-VALIDATE_OWL_OPTS ?= --debug --satisfiability
+VALIDATE_OWL_OPTS ?= --info --satisfiability
 
 VALIDATE_ROOTS_TEST_FILE ?= $(TESTS_DIR)/validate-roots$(XML_SUFFIX)
 VALIDATE_ROOTS_ID ?= validate-roots
@@ -648,7 +648,7 @@ $(UNSAT_FUNC_PROPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 define do_closure
   @echo closure artifact '->' $@
   @mkdir -p $(dir $@)
-  $(CLOSE_BUNDLE) $(CLOSE_BUNDLE_OPTS) \
+  @$(CLOSE_BUNDLE) $(CLOSE_BUNDLE_OPTS) \
     --namespace '$(3) => $(2)' \
     --namespace '$(5) => $(4)' \
     --name $(1) --uri $(2) --backbone-disjoints "$(BACKBONE_DISJOINTS)" \
