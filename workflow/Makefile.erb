@@ -155,6 +155,7 @@ tmpfile = $(dir $1).$(notdir $1)
   end
   class OMFBundleGraph < OMFGraph
     def initialize(stem, project)
+      @stem = stem
       @project = project
       super(ontology_iri, stem, false, '$(BUNDLES_DIR)')
     end
