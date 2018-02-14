@@ -469,18 +469,10 @@ endef
 
 <%=
   rule = Rule.new('$(AUDITS_TEST_FILE)')
-  iris = []
-  exported_graphs.each do |g|
-    iris << g.ontology_iri
-    rule.prereqs << g.ontology_sentinel
-    rule.prereqs += imports_map[g].map { |i| i.ontology_sentinel }
-    unless g.ontology_iri == PROJECT_BUNDLE_IRI
-      ENTAILMENTS.keys.each do |type|
-        rule.prereqs << g.entailments_sentinel(type)
-        rule.prereqs += imports_map[g].reject { |i| i.ontology_iri == PROJECT_BUNDLE_IRI}.map { |i| i.entailments_sentinel(type) }
-      end
-    end
-  end
+  iris = exported_graphs.map { |g| g.ontology_iri }
+  rule.prereqs << bundle_closure_graph.ontology_sentinel
+  rule.prereqs += imports_map[bundle_closure_graph].map { |i| i.ontology_sentinel }
+  rule.prereqs += ENTAILMENTS.keys.map { |type| bundle_closure_graph.entailments_sentinel(type) }
   rule.cmds << "$(call do_audit,--audit-tree $(AUDITS_TREE),#{iris.join(' ')})"
   rule
 %>
@@ -501,18 +493,10 @@ endef
 
 <%=
   rule = Rule.new('$(REPORTS_TEST_FILE)')
-  iris = []
-  exported_graphs.each do |g|
-    iris << g.ontology_iri
-    rule.prereqs << g.ontology_sentinel
-    rule.prereqs += imports_map[g].map { |i| i.ontology_sentinel }
-    unless g.ontology_iri == PROJECT_BUNDLE_IRI
-      ENTAILMENTS.keys.each do |type|
-	rule.prereqs << g.entailments_sentinel(type)
-	rule.prereqs += imports_map[g].reject { |i| i.ontology_iri == PROJECT_BUNDLE_IRI}.map { |i| i.entailments_sentinel(type) }
-      end
-    end
-  end
+  iris = exported_graphs.map { |g| g.ontology_iri }
+  rule.prereqs << bundle_closure_graph.ontology_sentinel
+  rule.prereqs += imports_map[bundle_closure_graph].map { |i| i.ontology_sentinel }
+  rule.prereqs += ENTAILMENTS.keys.map { |type| bundle_closure_graph.entailments_sentinel(type) }
   rule.cmds << "$(call do_report,--audit-tree $(REPORTS_TREE),#{iris.join(' ')})"
   rule
 %>

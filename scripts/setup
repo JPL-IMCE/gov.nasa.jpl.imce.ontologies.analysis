@@ -9,7 +9,6 @@ PUBLIC=$HOME/git/gov.nasa.jpl.imce.ontologies.public
 PUBLIC_OML=$PUBLIC/converted-oml
 PUBLIC_OWL=$PUBLIC/ontologies
 PUBLIC_BUNDLES=$PUBLIC/bundles
-PUBLIC_ENTAILMENTS=$PUBLIC/entailments
 IMCE=imce.jpl.nasa.gov
 PROJECT_BUNDLE_PATH=$IMCE/foundation/project
 PURL_ORG=purl.org
@@ -81,10 +80,6 @@ $CONVERT text --cat $INPUT/$CATALOG --output $OUTPUT --owl --clear
 # add purl.org ontologies not created by converter
 
 rsync -a $PURL_ORG_OWL $OUTPUT
-
-# add cached entailments
-
-rsync -av $PUBLIC_ENTAILMENTS/ $ENTAILMENTS
 
 # add cached project bundle
 
