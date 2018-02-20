@@ -22,7 +22,7 @@ BUNDLE_CLOSURE_PROJECT ?= europa
 BUNDLE_CLOSURE_STEM ?= export-bundle
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
-CLOSE_BUNDLE_OPTS ?= --export
+CLOSE_BUNDLE_OPTS ?= --info --export
 
 DEPENDENCIES_FILE ?= .dependencies
 
@@ -52,7 +52,8 @@ GET_UNSAT_ROOTS ?= $(TOOLS_DIR)/get-unsat-roots
 GET_UNSAT_ROOTS_OPTS ?= 
 
 IRI_TO_MDID ?= $(TOOLS_DIR)/iri-to-mdid
-IRI_TO_MDID_OPTS ?= 
+IRI_TO_MDID_OPTS ?=
+IRI_FILE ?= <%= IRI_FILE = "#{ARTIFACTS_DIR}/iris" %>
 
 JRUBY ?= jruby
 JRUBY_CMD ?= $(JRUBY) $(JRUBY_OPTS)
@@ -268,14 +269,18 @@ tmpfile = $(dir $1).$(notdir $1)
   end
   location_map[bundle_closure_graph.ontology_iri] = bundle_closure_graph.ontology_file_iri
   								
-  # Create imports graph.
+  # Create imports graph. Omit back edges; processing does not rely on acyclicity at present.
   
   imports_graph = metadata['edges'].inject(DirectedAcyclicGraph.new(DefaultEdge)) do |memo, edge|
     importing = graphs[edge['importing']]
     imported = graphs[edge['imported']]
     memo.addVertex(importing)
     memo.addVertex(imported)
-    memo.addEdge(importing, imported)
+    begin
+      memo.addEdge(importing, imported)
+    rescue Java::JavaLang::IllegalArgumentException
+      warn "back edge omitted"
+    end
     memo
   end
 
@@ -322,17 +327,19 @@ tmpfile = $(dir $1).$(notdir $1)
  
   bundle_closure_file_rule = Makefile::Rule.new(bundle_closure_graph.ontology_file)
   
-  iris = imports_map[bundle_closure_graph].map { |o| o.ontology_iri }
-  files = imports_map[bundle_closure_graph].map { |o| o.ontology_file }
+  iris = root_nodes.map { |o| o.ontology_iri }
+  files = root_nodes.map { |o| o.ontology_file }
   
   project_bundle_graph = graphs[PROJECT_BUNDLE_IRI]
   iris << project_bundle_graph.ontology_iri
   files << project_bundle_graph.ontology_file
+
+  File.open(IRI_FILE, 'w') { |f| f.write(iris.join("\n")) }
   
   bundle_closure_file_rule.prereqs += files 
   bundle_closure_file_rule.cmds << "$(call do_closure,#{bundle_closure_graph.name},#{bundle_closure_graph.ontology_iri}," +
                                    "#{bundle_closure_graph.abbrev},#{bundle_closure_graph.backbone_iri}," +
-				   "#{bundle_closure_graph.backbone_abbrev},#{iris.to_a.join(' ')})"
+				   "#{bundle_closure_graph.backbone_abbrev},$(IRI_FILE))"
   
   # Create rules for validating root ontologies.
  
@@ -638,7 +645,7 @@ define do_closure
     --namespace '$(5) => $(4)' \
     --name $(1) --uri $(2) --backbone-disjoints "$(BACKBONE_DISJOINTS)" \
     --backbone-prefix $(BACKBONE_PREFIX) \
-    $(6) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+    --iri-file $(6) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 <%= bundle_closure_file_rule %>

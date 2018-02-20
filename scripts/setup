@@ -29,8 +29,8 @@ OMIT="
   $INPUT/$IMCE/$OMG_ORG
   $INPUT/$IMCE/*/*/*-embedding.oml
 "
-EUROPA_PERSONNEL="$INPUT/$EUROPA/projects/EuropaClipper/DesignCapture/vocabularyExtensions/EuropaPersonnel/europa.oml"
 W3_ORG=www.w3.org
+SPREADSHEET_INPUT = $HOME/Downloads/
 
 # run in analysis target/workflow/artifacts
 
@@ -64,9 +64,12 @@ unzip $input -d $INPUT
 
 rm -rf $OMIT
 
-# remove bogus vocabulary extension in europa.oml
+# remove bogus vocabulary extensions
 
-sed -i.bak '/extends.*owl2-mof2/d' $EUROPA_PERSONNEL
+for o in $(find $INPUT -name '*.oml')
+do 
+    sed -i.bak '/extends.*owl2-mof2/d' $o
+done
 
 # use latest w3.org and purl.org OML files
 
@@ -75,7 +78,13 @@ rsync -a --delete $PUBLIC_OML/$PURL_ORG/ $INPUT/$PURL_ORG
 
 # convert OML to owl
 
-$CONVERT text --cat $INPUT/$CATALOG --output $OUTPUT --owl --clear
+# $CONVERT text --cat $INPUT/$CATALOG --output $OUTPUT --owl --clear
+
+# temporary load of pre-converted ontologies
+
+mkdir /tmp/nfr
+tar x -v -z -C /tmp/nfr -f ~/Downloads/europa-owl.tgz
+rsync -av /tmp/nfr/conv/ $OUTPUT
 
 # add purl.org ontologies not created by converter
 
