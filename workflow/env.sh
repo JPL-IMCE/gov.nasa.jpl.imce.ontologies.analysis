@@ -56,7 +56,7 @@ export JENA_DATASET="imce-ontologies"
 
 export JENA_HOST="localhost"
 
-export JENA_PORT="8898"
+export JENA_PORT="3030"
 
 # Add as maven dependency
 export DOCBOOK_XHTML_XSL="${TOOLS}/docbook/xhtml/docbook.xsl"
