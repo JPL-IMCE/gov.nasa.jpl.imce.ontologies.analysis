@@ -29,7 +29,7 @@ OMIT="
   $INPUT/$IMCE/$OMG_ORG
   $INPUT/$IMCE/*/*/*-embedding.oml
 "
-W3_ORG=www.w3.org
+GW3_ORG=www.w3.org
 SPREADSHEET_INPUT = $HOME/Downloads/
 
 # run in analysis target/workflow/artifacts
@@ -83,8 +83,9 @@ rsync -a --delete $PUBLIC_OML/$PURL_ORG/ $INPUT/$PURL_ORG
 # temporary load of pre-converted ontologies
 
 mkdir /tmp/nfr
-tar x -v -z -C /tmp/nfr -f ~/Downloads/europa-owl.tgz
+tar x -v -z -C /tmp/nfr -f ~/Downloads/export-europa-designcapture-20180201201400.owl.tgz
 rsync -av /tmp/nfr/conv/ $OUTPUT
+rm -rf $OUTPUT/www.nomagic.com
 
 # add purl.org ontologies not created by converter
 
@@ -92,4 +93,5 @@ rsync -a $PURL_ORG_OWL $OUTPUT
 
 # add cached project bundle
 
+mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
 rsync -av --exclude='**-embedding*' $PUBLIC_BUNDLES/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH

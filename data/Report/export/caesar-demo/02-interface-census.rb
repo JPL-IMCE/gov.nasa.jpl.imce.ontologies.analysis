@@ -4,9 +4,9 @@ query %q{
 
   <%= @namespace_defs %>
 
-  SELECT ?c ?v
+  SELECT DISTINCT ?c ?v
   WHERE {
-    ?c rdfs:subClassOf mission:Interface .
+    ?c rdfs:subClassOf+ mission:Interface .
     OPTIONAL {
       ?c rdfs:subClassOf [ owl:onProperty base:hasCanonicalName ; owl:hasValue ?v ] 
     }

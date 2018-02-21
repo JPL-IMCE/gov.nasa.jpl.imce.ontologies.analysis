@@ -22,12 +22,13 @@ BUNDLE_CLOSURE_PROJECT ?= europa
 BUNDLE_CLOSURE_STEM ?= export-bundle
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
-CLOSE_BUNDLE_OPTS ?= --info --export
+CLOSE_BUNDLE_OPTS ?= --debug --export --iri-file $(CLOSE_BUNDLE_IRI_FILE)
+CLOSE_BUNDLE_IRI_FILE ?= <%= CLOSE_BUNDLE_IRI_FILE = "#{ARTIFACTS_DIR}/close_bundle_iris" %>
 
 DEPENDENCIES_FILE ?= .dependencies
 
 ENTAIL ?= $(JRUBY_CMD) $(TOOLS_DIR)/entail
-ENTAIL_OPTS = 
+ENTAIL_OPTS = --vacuous
 
 EMPTY_IMPORTS_FILE ?= empty-imports.yaml
 
@@ -53,7 +54,6 @@ GET_UNSAT_ROOTS_OPTS ?=
 
 IRI_TO_MDID ?= $(TOOLS_DIR)/iri-to-mdid
 IRI_TO_MDID_OPTS ?=
-IRI_FILE ?= <%= IRI_FILE = "#{ARTIFACTS_DIR}/iris" %>
 
 JRUBY ?= jruby
 JRUBY_CMD ?= $(JRUBY) $(JRUBY_OPTS)
@@ -76,9 +76,11 @@ REPORTS_TREE ?= ../../data/Report/export/caesar-demo
 REPORTS_TEST_FILE ?= $(REPORTS_DIR)/run-reports$(ZIP_SUFFIX)
 RUBY ?= $(JRUBY)
 RUN_AUDITS ?= $(JRUBY_CMD) $(TOOLS_DIR)/run-audits-jena
-RUN_AUDITS_OPTS ?= --info --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
-RUN_REPORTS ?= $(JRUBY_CMD) $(TOOLS_DIR)/run-audits-jena
-RUN_REPORTS_OPTS ?= --info --report --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+RUN_AUDITS_OPTS ?= --info --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET) --iri-file $(RUN_AUDITS_IRI_FILE)
+RUN_AUDITS_IRI_FILE ?= <%= RUN_AUDITS_IRI_FILE = "#{ARTIFACTS_DIR}/run_audits_iris" %>
+RUN_REPORTS ?= $(RUN_AUDITS)
+RUN_REPORTS_OPTS ?= --info --report --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET) --iri-file $(RUN_REPORTS_IRI_FILE)
+RUN_REPORTS_IRI_FILE ?= <%= RUN_REPORTS_IRI_FILE = "#{ARTIFACTS_DIR}/run_reports_iris" %>
 
 SENTINELS_DIR ?= $(ARTIFACTS_DIR)/.sentinels
 
@@ -334,12 +336,12 @@ tmpfile = $(dir $1).$(notdir $1)
   iris << project_bundle_graph.ontology_iri
   files << project_bundle_graph.ontology_file
 
-  File.open(IRI_FILE, 'w') { |f| f.write(iris.join("\n")) }
+  File.open(CLOSE_BUNDLE_IRI_FILE, 'w') { |f| f.write(iris.join("\n")) }
   
   bundle_closure_file_rule.prereqs += files 
   bundle_closure_file_rule.cmds << "$(call do_closure,#{bundle_closure_graph.name},#{bundle_closure_graph.ontology_iri}," +
                                    "#{bundle_closure_graph.abbrev},#{bundle_closure_graph.backbone_iri}," +
-				   "#{bundle_closure_graph.backbone_abbrev},$(IRI_FILE))"
+				   "#{bundle_closure_graph.backbone_abbrev})"
   
   # Create rules for validating root ontologies.
  
@@ -472,16 +474,17 @@ run-audits:	$(AUDITS_TEST_FILE)
 define do_audit
   @echo audit '->' $@
   @mkdir -p $(dir $@)
-  @$(RUN_AUDITS) $(RUN_AUDITS_OPTS) $(1) $(2) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  @$(RUN_AUDITS) $(RUN_AUDITS_OPTS) $(1) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 <%=
   rule = Rule.new('$(AUDITS_TEST_FILE)')
   iris = exported_graphs.map { |g| g.ontology_iri }
+  File.open(RUN_AUDITS_IRI_FILE, 'w') { |f| f.write(iris.join("\n")) }
   rule.prereqs << bundle_closure_graph.ontology_sentinel
   rule.prereqs += imports_map[bundle_closure_graph].map { |i| i.ontology_sentinel }
   rule.prereqs += ENTAILMENTS.keys.map { |type| bundle_closure_graph.entailments_sentinel(type) }
-  rule.cmds << "$(call do_audit,--audit-tree $(AUDITS_TREE),#{iris.join(' ')})"
+  rule.cmds << "$(call do_audit,--audit-tree $(AUDITS_TREE))"
   rule
 %>
 
@@ -496,16 +499,17 @@ run-reports:	$(REPORTS_TEST_FILE)
 define do_report
   @echo report '->' $@
   @mkdir -p $(dir $@)
-  @$(RUN_REPORTS) $(RUN_REPORTS_OPTS) $(1) $(2) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  @$(RUN_REPORTS) $(RUN_REPORTS_OPTS) $(1) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 <%=
   rule = Rule.new('$(REPORTS_TEST_FILE)')
   iris = exported_graphs.map { |g| g.ontology_iri }
+  File.open(RUN_REPORTS_IRI_FILE, 'w') { |f| f.write(iris.join("\n")) }
   rule.prereqs << bundle_closure_graph.ontology_sentinel
   rule.prereqs += imports_map[bundle_closure_graph].map { |i| i.ontology_sentinel }
   rule.prereqs += ENTAILMENTS.keys.map { |type| bundle_closure_graph.entailments_sentinel(type) }
-  rule.cmds << "$(call do_report,--audit-tree $(REPORTS_TREE),#{iris.join(' ')})"
+  rule.cmds << "$(call do_report,--audit-tree $(REPORTS_TREE))"
   rule
 %>
 
@@ -645,7 +649,7 @@ define do_closure
     --namespace '$(5) => $(4)' \
     --name $(1) --uri $(2) --backbone-disjoints "$(BACKBONE_DISJOINTS)" \
     --backbone-prefix $(BACKBONE_PREFIX) \
-    --iri-file $(6) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+    > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 <%= bundle_closure_file_rule %>

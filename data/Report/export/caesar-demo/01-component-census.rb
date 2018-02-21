@@ -7,10 +7,10 @@ query %q{
   PREFIX europa: <http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/vocabularyExtensions/MEL_PEL_TEL/europa#>
   PREFIX MEL_PEL_TEL: <http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/vocabularyExtensions/MEL_PEL_TEL#>
 
-  SELECT ?iri ?name ?hardware ?thermal ?power
+  SELECT DISTINCT ?iri ?name ?hardware ?thermal ?power
   WHERE {
 
-    ?iri rdfs:subClassOf mission:Component .
+    ?iri rdfs:subClassOf+ mission:Component .
 
     OPTIONAL {
       ?iri rdfs:subClassOf [ owl:onProperty base:hasCanonicalName ; owl:hasValue ?name ] 
