@@ -22,7 +22,7 @@ BUNDLE_CLOSURE_PROJECT ?= europa
 BUNDLE_CLOSURE_STEM ?= export-bundle
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
-CLOSE_BUNDLE_OPTS ?= --debug --export --iri-file $(CLOSE_BUNDLE_IRI_FILE)
+CLOSE_BUNDLE_OPTS ?= --info --export --iri-file $(CLOSE_BUNDLE_IRI_FILE)
 CLOSE_BUNDLE_IRI_FILE ?= <%= CLOSE_BUNDLE_IRI_FILE = "#{ARTIFACTS_DIR}/close_bundle_iris" %>
 
 DEPENDENCIES_FILE ?= .dependencies
@@ -50,7 +50,7 @@ GET_UNSAT_FUNC_PROPS_OPTS ?= --get-func-props
 GET_UNSAT_IRIS_OPTS ?= 
 
 GET_UNSAT_ROOTS ?= $(TOOLS_DIR)/get-unsat-roots
-GET_UNSAT_ROOTS_OPTS ?= --debug
+GET_UNSAT_ROOTS_OPTS ?= --info
 
 IRI_TO_MDID ?= $(TOOLS_DIR)/iri-to-mdid
 IRI_TO_MDID_OPTS ?=
@@ -275,7 +275,9 @@ tmpfile = $(dir $1).$(notdir $1)
   
   imports_graph = metadata['edges'].inject(DirectedAcyclicGraph.new(DefaultEdge)) do |memo, edge|
     importing = graphs[edge['importing']]
+    raise "no importing graph for #{edge['importing']}" unless importing
     imported = graphs[edge['imported']]
+    raise "no imported graph for #{edge['imported']}" unless imported
     memo.addVertex(importing)
     memo.addVertex(imported)
     begin

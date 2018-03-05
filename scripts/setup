@@ -6,14 +6,10 @@ INPUT=oml-input
 OUTPUT=ontologies
 ENTAILMENTS=entailments
 PUBLIC=$HOME/git/gov.nasa.jpl.imce.ontologies.public
-PUBLIC_OML=$PUBLIC/converted-oml
-PUBLIC_OWL=$PUBLIC/ontologies
 PUBLIC_BUNDLES=$PUBLIC/bundles
 IMCE=imce.jpl.nasa.gov
 PROJECT_BUNDLE_PATH=$IMCE/foundation/project
 PURL_ORG=purl.org
-PURL_ORG_OML=$PUBLIC_OML/$PURL_ORG
-PURL_ORG_OWL=$PUBLIC_OWL/$PURL_ORG
 EUROPA=europa.jpl.nasa.gov
 OMG_ORG=www.omg.org
 OMIT="
@@ -71,25 +67,13 @@ do
     sed -i.bak '/extends.*owl2-mof2/d' $o
 done
 
-# use latest w3.org and purl.org OML files
-
-rsync -a --delete $PUBLIC_OML/$W3_ORG/ $INPUT/$W3_ORG
-rsync -a --delete $PUBLIC_OML/$PURL_ORG/ $INPUT/$PURL_ORG
-
 # convert OML to owl
 
-# $CONVERT text --cat $INPUT/$CATALOG --output $OUTPUT --owl --clear
-
-# temporary load of pre-converted ontologies
-
-mkdir /tmp/nfr
-tar x -v -z -C /tmp/nfr -f ~/Downloads/export-europa-designcapture-20180201201400.owl.tgz
-rsync -av /tmp/nfr/conv/ $OUTPUT
-rm -rf $OUTPUT/www.nomagic.com
+$CONVERT text --cat $INPUT/$CATALOG --output $OUTPUT --owl --clear
 
 # add purl.org ontologies not created by converter
 
-rsync -a $PURL_ORG_OWL $OUTPUT
+#rsync -a $PURL_ORG_OWL $OUTPUT
 
 # add cached project bundle
 
