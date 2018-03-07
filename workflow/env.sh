@@ -52,7 +52,7 @@ export GEM_PATH="${GEM_HOME}:$(dirname $(pwd))"
 
 export PARALLEL_MAKE_OPTS="-j8 -l16"
 
-export JENA_DATASET="imce-ontologies"
+export JENA_DATASET="icarus"
 
 export JENA_HOST="localhost"
 

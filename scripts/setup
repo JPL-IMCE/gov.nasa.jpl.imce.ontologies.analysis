@@ -10,6 +10,16 @@ IMCE=imce.jpl.nasa.gov
 PROJECT_BUNDLE_PATH=$IMCE/foundation/project
 EUROPA=europa.jpl.nasa.gov
 OMG_ORG=www.omg.org
+OMIT='
+  imce.jpl.nasa.gov/discipline/mechanical
+  imce.jpl.nasa.gov/discipline/ontological-behavior
+  imce.jpl.nasa.gov/discipline/risk
+  imce.jpl.nasa.gov/discipline/state-analysis
+  imce.jpl.nasa.gov/math
+  imce.jpl.nasa.gov/skeleton
+  imce.jpl.nasa.gov/time
+  imce.jpl.nasa.gov/www.omg.org
+'
 
 # run in analysis target/workflow/artifacts
 
@@ -19,10 +29,18 @@ then
   exit 1
 fi
 
-# copy exported function list data
+# unzip exported data
 
 mkdir -p $INPUT
-rsync -av $1 $INPUT
+(cd $INPUT; unzip $1)
+
+# remove unneeded ontologies
+
+for o in $OMIT
+do
+    rm -rf $INPUT/$o
+done
+find $INPUT -type f -name '*-embedding.oml' -print0 | xargs -0 rm -f
 
 # remove bogus vocabulary extensions
 
@@ -33,7 +51,7 @@ done
 
 # convert OML to owl
 
-$CONVERT json --cat $INPUT/$CATALOG --output $OUTPUT --owl --clear
+$CONVERT text --cat $INPUT/$CATALOG --output $OUTPUT --owl --clear
 
 # add cached project bundle
 
