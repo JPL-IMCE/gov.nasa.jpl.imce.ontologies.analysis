@@ -10,24 +10,26 @@ query %q{
     ?super rdfs:subClassOf [ owl:onProperty base:contains;
                              owl:someValuesFrom ?sub ] .
 
-    ?super rdfs:subClassOf+ mission:Component .
+    ?super rdfs:subClassOf mission:Component .
     OPTIONAL {
-      ?super rdfs:subClassOf [ owl:onProperty base:hasCanonicalName ; owl:hasValue ?super_name ] 
+      ?super rdfs:label ?super_name
     }
 
-    ?sub rdfs:subClassOf+ mission:Component .
+    ?sub rdfs:subClassOf mission:Component .
     OPTIONAL {
-      ?sub rdfs:subClassOf [ owl:onProperty base:hasCanonicalName ; owl:hasValue ?sub_name ] 
+      ?sub rdfs:label ?sub_name
     }
 
     FILTER (
       REGEX(STR(?super),
-        "http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/"
+        "http://caesar.imce.jpl.nasa.gov/demos/ICARUS/models/authorities"
       )
       &&
       REGEX(STR(?sub),
-        "http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/"
+        "http://caesar.imce.jpl.nasa.gov/demos/ICARUS/models/authorities"
       )
     )
   }
+
+    ORDER BY ?super ?sub
 }

@@ -4,15 +4,18 @@ query %q{
 
   <%= @namespace_defs %>
 
-  SELECT DISTINCT ?c ?v
+  SELECT DISTINCT ?iri ?name
   WHERE {
-    ?c rdfs:subClassOf+ project:Authority .
+
+    ?iri rdfs:subClassOf project:Authority .
+
     OPTIONAL {
-      ?c rdfs:subClassOf [ owl:onProperty base:hasCanonicalName ; owl:hasValue ?v ] 
+      ?iri rdfs:label ?name
     }
+
     FILTER (
-      REGEX(STR(?c),
-        "http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/"
+      REGEX(STR(?iri),
+        "http://caesar.imce.jpl.nasa.gov/demos/ICARUS/models/authorities"
       )
     )
   }
