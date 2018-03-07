@@ -4,28 +4,12 @@ CATALOG=oml.catalog.xml
 CONVERT=$HOME/Downloads/OMLConverters/bin/omlConverter
 INPUT=oml-input
 OUTPUT=ontologies
-ENTAILMENTS=entailments
 PUBLIC=$HOME/git/gov.nasa.jpl.imce.ontologies.public
 PUBLIC_BUNDLES=$PUBLIC/bundles
 IMCE=imce.jpl.nasa.gov
 PROJECT_BUNDLE_PATH=$IMCE/foundation/project
 EUROPA=europa.jpl.nasa.gov
 OMG_ORG=www.omg.org
-OMIT="
-  $INPUT/$IMCE/math
-  $INPUT/$IMCE/skeleton
-  $INPUT/$IMCE/discipline/mechanical
-  $INPUT/$IMCE/discipline/ontological-behavior
-  $INPUT/$IMCE/discipline/risk
-  $INPUT/$IMCE/discipline/state-analysis
-  $INPUT/$IMCE/foundation/owl2-mof2
-  $INPUT/$IMCE/foundation/time
-  $INPUT/$IMCE/oml/provenance
-  $INPUT/$IMCE/$OMG_ORG
-  $INPUT/$IMCE/*/*/*-embedding.oml
-"
-GW3_ORG=www.w3.org
-SPREADSHEET_INPUT = $HOME/Downloads/
 
 # run in analysis target/workflow/artifacts
 
@@ -35,29 +19,10 @@ then
   exit 1
 fi
 
-# locate export zip
+# copy exported function list data
 
-input=$1
-if [ -f "$input" ]
-then
-  case "$input" in
-    *.zip)    ;;
-    *)	      echo "input must be a zip file" 1>&2
-	      exit 1;;
-  esac
-else
-  echo "no export zip file $input" 1>&2
-  exit 1
-fi
-
-# unzip exporter data
-
-rm -rf $INPUT
-unzip $input -d $INPUT
-
-# purge omitted IMCE ontologies
-
-rm -rf $OMIT
+mkdir -p $INPUT
+rsync -av $1 $INPUT
 
 # remove bogus vocabulary extensions
 
@@ -68,7 +33,7 @@ done
 
 # convert OML to owl
 
-$CONVERT text --cat $INPUT/$CATALOG --output $OUTPUT --owl --clear
+$CONVERT json --cat $INPUT/$CATALOG --output $OUTPUT --owl --clear
 
 # add cached project bundle
 
