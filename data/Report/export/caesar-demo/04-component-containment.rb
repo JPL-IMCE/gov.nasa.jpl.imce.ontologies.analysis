@@ -12,12 +12,12 @@ query %q{
 
     ?super rdfs:subClassOf+ mission:Component .
     OPTIONAL {
-      ?super rdfs:subClassOf [ owl:onProperty base:hasCanonicalName ; owl:hasValue ?super_name ] 
+      ?super rdfs:label ?super_name
     }
 
     ?sub rdfs:subClassOf+ mission:Component .
     OPTIONAL {
-      ?sub rdfs:subClassOf [ owl:onProperty base:hasCanonicalName ; owl:hasValue ?sub_name ] 
+      ?sub rdfs:label ?sub_name
     }
 
     FILTER (

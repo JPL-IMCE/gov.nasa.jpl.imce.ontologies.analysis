@@ -13,7 +13,7 @@ query %q{
     ?iri rdfs:subClassOf+ mission:Component .
 
     OPTIONAL {
-      ?iri rdfs:subClassOf [ owl:onProperty base:hasCanonicalName ; owl:hasValue ?name ] 
+      ?iri rdfs:label ?name
     }
 
     bind(exists { ?iri rdfs:subClassOf europa:HardwareComponent } as ?hardware)

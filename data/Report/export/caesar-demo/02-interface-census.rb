@@ -8,7 +8,7 @@ query %q{
   WHERE {
     ?c rdfs:subClassOf+ mission:Interface .
     OPTIONAL {
-      ?c rdfs:subClassOf [ owl:onProperty base:hasCanonicalName ; owl:hasValue ?v ] 
+      ?c rdfs:label ?v
     }
     FILTER (
       REGEX(STR(?c),
