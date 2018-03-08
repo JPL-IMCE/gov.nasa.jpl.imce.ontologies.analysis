@@ -5,6 +5,7 @@ query %q{
   <%= @namespace_defs %>
 
   SELECT DISTINCT ?iri ?name
+  FROM <urn:x-arq:UnionGraph>
   WHERE {
 
     ?iri rdfs:subClassOf project:Authority .
