@@ -4,9 +4,6 @@ query %q{
 
   <%= @namespace_defs %>
 
-  PREFIX europa: <http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/vocabularyExtensions/MEL_PEL_TEL/europa#>
-  PREFIX MEL_PEL_TEL: <http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/vocabularyExtensions/MEL_PEL_TEL#>
-
   SELECT DISTINCT ?iri ?name ?hardware ?thermal ?power
   FROM <urn:x-arq:UnionGraph>
   WHERE {
@@ -17,9 +14,9 @@ query %q{
       ?iri rdfs:label ?name
     }
 
-    bind(exists { ?iri rdfs:subClassOf europa:HardwareComponent } as ?hardware)
-    bind(exists { ?iri rdfs:subClassOf MEL_PEL_TEL:ThermalLoadProduct } as ?thermal)
-    bind(exists { ?iri rdfs:subClassOf europa:PowerLoadComponent } as ?power)
+    bind(exists { ?iri rdfs:subClassOf [ rdfs:label "europa:HardwareComponent" ] } as ?hardware)
+    bind(exists { ?iri rdfs:subClassOf [ rdfs:label "Thermal Load Product" ] } as ?thermal)
+    bind(exists { ?iri rdfs:subClassOf [ rdfs:label "europa:PowerLoadComponent" ] } as ?power)
 
     FILTER (
       REGEX(STR(?iri),
