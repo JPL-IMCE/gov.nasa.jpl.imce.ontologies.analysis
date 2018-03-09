@@ -659,6 +659,7 @@ define do_clear_repo
   @$(RUBY) $(FUSEKI_S_QUERY) --service='$(FUSEKI_ENDPOINT)' 'SELECT DISTINCT ?g WHERE { GRAPH ?g { } }' | \
     $(RUBY) -rjson -e "puts JSON.parse(STDIN.read)['results']['bindings'].map { |b| b['g']['value'] }" | \
     xargs $(PARALLEL_DELETE) -n 1 $(RUBY) $(FUSEKI_S_DELETE) '$(FUSEKI_ENDPOINT)'
+  @rm -rf $(SENTINELS_DIR)
 endef
 
 .PHONY: clear-repo
