@@ -86,3 +86,6 @@ run-audits: location-mapping
 
 run-reports: location-mapping
 	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} run-reports)
+
+clear-repo:
+	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} clear-repo)

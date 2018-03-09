@@ -22,7 +22,7 @@ BUNDLE_CLOSURE_PROJECT ?= europa
 BUNDLE_CLOSURE_STEM ?= export-bundle
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
-CLOSE_BUNDLE_OPTS ?= --debug --export --iri-file $(CLOSE_BUNDLE_IRI_FILE)
+CLOSE_BUNDLE_OPTS ?= --info --export --iri-file $(CLOSE_BUNDLE_IRI_FILE)
 CLOSE_BUNDLE_IRI_FILE ?= <%= CLOSE_BUNDLE_IRI_FILE = "#{ARTIFACTS_DIR}/close_bundle_iris" %>
 
 DEPENDENCIES_FILE ?= .dependencies
@@ -37,9 +37,11 @@ ENTAILMENTS_DIR ?= <%= ENTAILMENTS_DIR = "#{ARTIFACTS_DIR}/entailments" %>
 EXTRACT ?= $(JRUBY_CMD) $(TOOLS_DIR)/extract-ontology
 EXTRACT_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
 
+FUSEKI_ENDPOINT ?= http://$(JENA_HOST):$(JENA_PORT)/$(JENA_DATASET)
 FUSEKI_S_DELETE ?= $(FUSEKI_BIN)/s-delete
 FUSEKI_S_GET ?= $(FUSEKI_BIN)/s-get
 FUSEKI_S_PUT ?= $(FUSEKI_BIN)/s-put
+FUSEKI_S_QUERY ?= $(FUSEKI_BIN)/s-query
 
 GET_UNSATS ?= $(TOOLS_DIR)/get-unsats
 GET_UNSAT_PROPS_OPTS ?= --get-props
@@ -50,12 +52,12 @@ GET_UNSAT_FUNC_PROPS_OPTS ?= --get-func-props
 GET_UNSAT_IRIS_OPTS ?= 
 
 GET_UNSAT_ROOTS ?= $(TOOLS_DIR)/get-unsat-roots
-GET_UNSAT_ROOTS_OPTS ?= --debug
+GET_UNSAT_ROOTS_OPTS ?= --info
 
 IRI_TO_MDID ?= $(TOOLS_DIR)/iri-to-mdid
 IRI_TO_MDID_OPTS ?=
 
-JRUBY ?= jruby
+RUBY ?= jruby
 JRUBY_CMD ?= $(JRUBY) $(JRUBY_OPTS)
 JRUBY_OPTS ?= --headless -J-Xmx16384m -J-Djava.util.logging.config.file=logging.properties
 
@@ -69,6 +71,7 @@ MAKE_MAKEFILE ?= $(TOOLS_DIR)/make-makefile
 ONTOLOGIES_DIR ?= <%= ONTOLOGIES_DIR = "#{ARTIFACTS_DIR}/ontologies" %>
 OWL_SUFFIX = .owl
 
+PARALLEL_DELETE ?= -P 4
 PROJECT_BUNDLE_IRI ?= <%= PROJECT_BUNDLE_IRI = 'http://imce.jpl.nasa.gov/foundation/project/project-bundle' %>
 
 REPORTS_DIR ?= $(ARTIFACTS_DIR)/reports
@@ -647,6 +650,22 @@ endef
 
 <%= bundle_closure_file_rule %>
 
+#
+# clear-repo
+#
+
+define do_clear_repo
+  @echo "clear repo"
+  @$(RUBY) $(FUSEKI_S_QUERY) --service='$(FUSEKI_ENDPOINT)' 'SELECT DISTINCT ?g WHERE { GRAPH ?g { } }' | \
+    $(RUBY) -rjson -e "puts JSON.parse(STDIN.read)['results']['bindings'].map { |b| b['g']['value'] }" | \
+    xargs $(PARALLEL_DELETE) -n 1 $(RUBY) $(FUSEKI_S_DELETE) '$(FUSEKI_ENDPOINT)'
+endef
+
+.PHONY: clear-repo
+
+clear-repo:
+	$(call do_clear_repo)
+	
 #
 # Makefile
 #
