@@ -5,6 +5,7 @@ query %q{
   <%= @namespace_defs %>
 
   SELECT DISTINCT ?wp ?wp_name ?comp ?comp_name
+  FROM <urn:x-arq:UnionGraph>
   WHERE {
 
     ?wp rdfs:subClassOf [

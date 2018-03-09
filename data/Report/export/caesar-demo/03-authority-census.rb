@@ -5,6 +5,7 @@ query %q{
   <%= @namespace_defs %>
 
   SELECT DISTINCT ?c ?v
+  FROM <urn:x-arq:UnionGraph>
   WHERE {
     ?c rdfs:subClassOf+ project:Authority .
     OPTIONAL {

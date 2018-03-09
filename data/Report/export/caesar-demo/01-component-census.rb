@@ -8,6 +8,7 @@ query %q{
   PREFIX MEL_PEL_TEL: <http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/vocabularyExtensions/MEL_PEL_TEL#>
 
   SELECT DISTINCT ?iri ?name ?hardware ?thermal ?power
+  FROM <urn:x-arq:UnionGraph>
   WHERE {
 
     ?iri rdfs:subClassOf+ mission:Component .

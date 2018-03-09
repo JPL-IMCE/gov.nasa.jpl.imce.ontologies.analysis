@@ -5,6 +5,7 @@ query %q{
   <%= @namespace_defs %>
 
   SELECT DISTINCT ?super ?super_name ?sub ?sub_name
+  FROM <urn:x-arq:UnionGraph>
   WHERE {
 
     ?super rdfs:subClassOf [ owl:onProperty base:contains;
