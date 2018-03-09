@@ -37,9 +37,12 @@ ENTAILMENTS_DIR ?= <%= ENTAILMENTS_DIR = "#{ARTIFACTS_DIR}/entailments" %>
 EXTRACT ?= $(JRUBY_CMD) $(TOOLS_DIR)/extract-ontology
 EXTRACT_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
 
+FUSEKI_ENDPOINT ?= http://$(JENA_HOST):$(JENA_PORT)/$(JENA_DATASET)
 FUSEKI_S_DELETE ?= $(FUSEKI_BIN)/s-delete
 FUSEKI_S_GET ?= $(FUSEKI_BIN)/s-get
 FUSEKI_S_PUT ?= $(FUSEKI_BIN)/s-put
+FUSEKI_S_QUERY ?= $(FUSEKI_BIN)/s-query
+FUSEKI_S_UPDATE ?= $(FUSEKI_BIN)/s-update
 
 GET_UNSATS ?= $(TOOLS_DIR)/get-unsats
 GET_UNSAT_PROPS_OPTS ?= --get-props
@@ -55,7 +58,7 @@ GET_UNSAT_ROOTS_OPTS ?= --info
 IRI_TO_MDID ?= $(TOOLS_DIR)/iri-to-mdid
 IRI_TO_MDID_OPTS ?=
 
-JRUBY ?= jruby
+RUBY ?= jruby
 JRUBY_CMD ?= $(JRUBY) $(JRUBY_OPTS)
 JRUBY_OPTS ?= --headless -J-Xmx16384m -J-Djava.util.logging.config.file=logging.properties
 
@@ -69,6 +72,7 @@ MAKE_MAKEFILE ?= $(TOOLS_DIR)/make-makefile
 ONTOLOGIES_DIR ?= <%= ONTOLOGIES_DIR = "#{ARTIFACTS_DIR}/ontologies" %>
 OWL_SUFFIX = .owl
 
+PARALLEL_DELETE ?= -P 4
 PROJECT_BUNDLE_IRI ?= <%= PROJECT_BUNDLE_IRI = 'http://imce.jpl.nasa.gov/foundation/project/project-bundle' %>
 
 REPORTS_DIR ?= $(ARTIFACTS_DIR)/reports
@@ -275,9 +279,7 @@ tmpfile = $(dir $1).$(notdir $1)
   
   imports_graph = metadata['edges'].inject(DirectedAcyclicGraph.new(DefaultEdge)) do |memo, edge|
     importing = graphs[edge['importing']]
-    raise "no importing graph for #{edge['importing']}" unless importing
     imported = graphs[edge['imported']]
-    raise "no imported graph for #{edge['imported']}" unless imported
     memo.addVertex(importing)
     memo.addVertex(imported)
     begin
@@ -649,6 +651,21 @@ endef
 
 <%= bundle_closure_file_rule %>
 
+#
+# clear-repo
+#
+
+define do_clear_repo
+  @echo "clear repo"
+  @$(RUBY) $(FUSEKI_S_UPDATE) --service='$(FUSEKI_ENDPOINT)' 'DROP ALL'
+  @rm -rf $(SENTINELS_DIR)
+endef
+
+.PHONY: clear-repo
+
+clear-repo:
+	$(call do_clear_repo)
+	
 #
 # Makefile
 #
