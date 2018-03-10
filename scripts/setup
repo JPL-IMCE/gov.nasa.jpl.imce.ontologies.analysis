@@ -1,4 +1,4 @@
-#!/BIN/sh
+#!/bin/sh
 
 CATALOG=oml.catalog.xml
 CONVERT=$HOME/Downloads/OMLConverters/bin/omlConverter
@@ -22,7 +22,7 @@ fi
 # copy exported function list data
 
 mkdir -p $INPUT
-rsync -av $1 $INPUT
+rsync -av $1/ $INPUT
 
 # remove bogus vocabulary extensions
 
@@ -33,7 +33,7 @@ done
 
 # convert OML to owl
 
-$CONVERT json --cat $INPUT/$CATALOG --output $OUTPUT --owl --clear
+$CONVERT text $INPUT/$CATALOG --output $OUTPUT --owl --clear
 
 # add cached project bundle
 
