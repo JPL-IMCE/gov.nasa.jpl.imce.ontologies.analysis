@@ -1,7 +1,7 @@
 #!/BIN/sh
 
 CATALOG=oml.catalog.xml
-CONVERT=$HOME/Downloads/stage/bin/omlConverter
+CONVERT=$HOME/Downloads/OMLConverters/bin/omlConverter
 INPUT=oml-input
 OUTPUT=ontologies
 ENTAILMENTS=entailments
