@@ -5,11 +5,14 @@ CONVERT=$HOME/Downloads/OMLConverters/bin/omlConverter
 INPUT=oml-input
 OUTPUT=ontologies
 PUBLIC=$HOME/git/gov.nasa.jpl.imce.ontologies.public
+PUBLIC_ONTOLOGIES=$PUBLIC/ontologies
 PUBLIC_BUNDLES=$PUBLIC/bundles
 IMCE=imce.jpl.nasa.gov
 PROJECT_BUNDLE_PATH=$IMCE/foundation/project
 EUROPA=europa.jpl.nasa.gov
 OMG_ORG=www.omg.org
+PURL_ORG=purl.org
+W3_ORG=www.w3.org
 
 # run in analysis target/workflow/artifacts
 
@@ -21,15 +24,9 @@ fi
 
 # copy exported function list data
 
-mkdir -p $INPUT
+rm -rf $INPUT
+mkdir $INPUT
 rsync -av $1/ $INPUT
-
-# remove bogus vocabulary extensions
-
-for o in $(find $INPUT -name '*.oml')
-do 
-    sed -i.bak '/extends.*owl2-mof2/d' $o
-done
 
 # convert OML to owl
 
