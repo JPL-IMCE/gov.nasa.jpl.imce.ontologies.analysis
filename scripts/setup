@@ -45,6 +45,10 @@ rsync -av $1/ $INPUT
 
 $CONVERT text $INPUT/$CATALOG --output $OUTPUT --owl --clear
 
+# overwrite vocabulary with latest OWL files
+
+rsync -av $PUBLIC_ONTOLOGIES/$IMCE $PUBLIC_ONTOLOGIES/$PURL_ORG $PUBLIC_ONTOLOGIES/$W3_ORG $OUTPUT
+
 # add cached project bundle
 
 mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
