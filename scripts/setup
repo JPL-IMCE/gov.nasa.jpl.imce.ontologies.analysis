@@ -51,7 +51,7 @@ done
 
 # convert OML to owl
 
-$CONVERT text --cat $INPUT/$CATALOG --output $OUTPUT --owl --clear
+$CONVERT text $INPUT/$CATALOG --output $OUTPUT --owl --clear
 
 # add cached project bundle
 
