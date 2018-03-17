@@ -26,6 +26,12 @@ OMIT="
   $INPUT/$IMCE/$OMG_ORG
   $INPUT/$IMCE/*/*/*-embedding.oml
 "
+CATALOG_CONTENT='<?xml version='1.0'?>
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog" prefer="public">
+    <rewriteURI
+        rewritePrefix="file:./"
+        uriStartString="http://"/>
+</catalog>'
 
 # run in analysis target/workflow/artifacts
 
@@ -55,6 +61,10 @@ fi
 rm -rf $INPUT
 unzip $input -d $INPUT
 
+# replace catalog
+
+echo "$CATALOG_CONTENT" > $INPUT/$CATALOG
+
 # purge omitted IMCE ontologies
 
 rm -rf $OMIT
@@ -68,7 +78,7 @@ done
 
 # convert OML to owl
 
-$CONVERT text $INPUT/$CATALOG --output $OUTPUT --owl --clear
+$CONVERT text $INPUT/$CATALOG -v:files --output $OUTPUT --owl --clear
 
 # add cached project bundle
 
