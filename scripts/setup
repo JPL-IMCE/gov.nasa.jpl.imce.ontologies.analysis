@@ -25,8 +25,9 @@ OMIT="
   $INPUT/$IMCE/oml/provenance
   $INPUT/$IMCE/$OMG_ORG
   $INPUT/$IMCE/*/*/*-embedding.oml
+  $INPUT/$IMCE/vocabulary
 "
-CATALOG_CONTENT='<?xml version='1.0'?>
+CATALOG_CONTENT='<?xml version="1.0"?>
 <catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog" prefer="public">
     <rewriteURI
         rewritePrefix="file:./"
