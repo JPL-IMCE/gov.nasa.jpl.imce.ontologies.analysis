@@ -23,7 +23,7 @@ BUNDLE_CLOSURE_STEM ?= export-bundle
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
 CLOSE_BUNDLE_OPTS ?= --info --export --iri-file $(CLOSE_BUNDLE_IRI_FILE)
-CLOSE_BUNDLE_IRI_FILE ?= <%= CLOSE_BUNDLE_IRI_FILE = "#{ARTIFACTS_DIR}/close_bundle_iris" %>
+CLOSE_BUNDLE_IRI_FILE ?= <%= CLOSE_BUNDLE_IRI_FILE = "#{ARTIFACTS_DIR}/.close_bundle_iris" %>
 
 DEPENDENCIES_FILE ?= .dependencies
 
@@ -81,10 +81,10 @@ REPORTS_TEST_FILE ?= $(REPORTS_DIR)/run-reports$(ZIP_SUFFIX)
 RUBY ?= $(JRUBY)
 RUN_AUDITS ?= $(JRUBY_CMD) $(TOOLS_DIR)/run-audits-jena
 RUN_AUDITS_OPTS ?= --info --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET) --iri-file $(RUN_AUDITS_IRI_FILE)
-RUN_AUDITS_IRI_FILE ?= <%= RUN_AUDITS_IRI_FILE = "#{ARTIFACTS_DIR}/run_audits_iris" %>
+RUN_AUDITS_IRI_FILE ?= <%= RUN_AUDITS_IRI_FILE = "#{ARTIFACTS_DIR}/.run_audits_iris" %>
 RUN_REPORTS ?= $(RUN_AUDITS)
 RUN_REPORTS_OPTS ?= --info --report --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET) --iri-file $(RUN_REPORTS_IRI_FILE)
-RUN_REPORTS_IRI_FILE ?= <%= RUN_REPORTS_IRI_FILE = "#{ARTIFACTS_DIR}/run_reports_iris" %>
+RUN_REPORTS_IRI_FILE ?= <%= RUN_REPORTS_IRI_FILE = "#{ARTIFACTS_DIR}/.run_reports_iris" %>
 
 SENTINELS_DIR ?= $(ARTIFACTS_DIR)/.sentinels
 

@@ -72,7 +72,7 @@ rm -rf $OMIT
 
 # remove bogus vocabulary extensions
 
-for o in $(find $INPUT -name '*.oml')
+for o in $(find $INPUT -name '*.oml' -print0 | xargs -0 grep -l owl2-mof2)
 do 
     sed -i.bak '/extends.*owl2-mof2/d' $o
 done
