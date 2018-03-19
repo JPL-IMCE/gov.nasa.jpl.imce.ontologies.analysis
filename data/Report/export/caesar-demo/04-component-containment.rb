@@ -23,11 +23,11 @@ query %q{
 
     FILTER (
       REGEX(STR(?super),
-        "http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/"
+        "http://europa.jpl.nasa.gov/user-model/generated/md"
       )
       &&
       REGEX(STR(?sub),
-        "http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/"
+        "http://europa.jpl.nasa.gov/user-model/generated/md"
       )
     )
   }

@@ -21,11 +21,11 @@ query %q{
 
     FILTER (
       REGEX(STR(?wp),
-        "http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/"
+        "http://europa.jpl.nasa.gov/user-model/generated/md"
       )
       &&
       REGEX(STR(?comp),
-        "http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/"
+        "http://europa.jpl.nasa.gov/user-model/generated/md"
       )
     )
   }

@@ -20,7 +20,7 @@ query %q{
 
     FILTER (
       REGEX(STR(?iri),
-        "http://europa.jpl.nasa.gov/projects/EuropaClipper/DesignCapture/"
+        "http://europa.jpl.nasa.gov/user-model/generated/md"
       )
     )
   }
