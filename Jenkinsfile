@@ -1,56 +1,107 @@
 #!/usr/bin/env groovy
 
 pipeline {
-    agent any
+    /* Agent directive is required. */
+    agent { node { label 'imce-infr-dev-01.jpl.nasa.gov' } } 
 
     parameters {
-        string(name: 'ONT_METADATA', defaultValue: '../../exporter-results/exportedOMFMetadata.owl', description: 'Ontology metadata file location. Should probably be moved into the build.sbt script and derived from input.')
+        /* What to perform during build */
+        string(name: 'BOOTSTRAP_BUILDS', defaultValue: 'TRUE', description: 'Whether or not to bootstrap subsequent builds and calculate dependencies. It makes no sense to skip this step.')
+        string(name: 'VALIDATE_ROOTS', defaultValue: 'TRUE', description: 'Whether or not to validate ontologies.')
+        string(name: 'LOAD_PRODUCTION', defaultValue: 'TRUE', description: 'Whether or not to load data. This calculate entailments and load data to fuseki.')
+        
+        string(name: 'OML_REPO', defaultValue: 'undefined', description: 'Repository where OML data to be converted is stored.')
+        string(name: 'FUSEKI_DATASET_NAME', defaultValue: 'imce-ontologies', description: 'Name of the Fuseki dataset to be used.')
+        string(name: 'FUSEKI_PORT_NUMBER', defaultValue: '3030', description: 'Port number of the Fuseki database.')
+    }
+
+    environment {
+        GEM_HOME = '/home/jenkins/.rvm/gems/jruby-1.7.19'
+        PATH = '$PATH:/home/jenkins/.rvm/gems/jruby-1.7.19/bin:/home/jenkins/.rvm/gems/jruby-1.7.19@global/bin:/home/jenkins/.rvm/rubies/jruby-1.7.19/bin:/usr/lib64/qt-3.3/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/jenkins/.rvm/bin'
+        SBT_OPTIONS = '-batch -no-colors'
+        VNC_OUT = './vnc.out'
+        CONVERT = '/path/to/OMLConverter'
+        PUBLIC = '/path/to/gov.nasa.jpl.imce.ontologies.public'
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                echo "Checking out project from SCM..."
-
-                checkout scm
-            }
-        }
 
         stage('Setup') {
             steps {
                 echo "Setting up environment..."
 
-                sh "cd workflow; . env.sh; /usr/bin/make clean"
+                sh "env"
+                sh "sbt $SBT_OPTIONS clean cleanFiles"
+                sh "sbt $SBT_OPTIONS setupTools"
 
-                sh "${tool name: 'default-sbt', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt setupTools setupExportResults"
-                sh ". workflow/env.sh"
+                // setup Fuseki, ontologies, tools, environment
             }
         }
 
-        stage('Build') {
+        stage('Checkout OML') {
+            when {
+                expression { params.OML_REPO != 'undefined' }
+            }
             steps {
-                sh "${tool name: 'default-sbt', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt compile test:compile"
-                //archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+                echo "Checkout OML..."
+
+                sh "rm -rf target/ontologies"   // Need to make sure it's empty before cloning
+                sh "mkdir -p target/ontologies; cd target/ontologies; git clone ${OML_REPO} ."
             }
         }
 
-        stage('Validate-Ontologies') {
-            environment {
-                METADATA = "${params.ONT_METADATA}"
+        stage('OML to OWL') {            
+            steps {
+                echo "Converting OML to OWL..."
+
+                sh "cd target/workflow/artifacts"
+                sh "bash -x ../../../scripts/setup target/ontologies/${OML_REPO}"
+                sh "bash -x ../../../scripts/create-dataset ${params.JENA_DATASET_NAME} ${params.JENA_PORT_NUMBER}"
+            }
+        }
+
+        stage('Bootstrap Builds') {
+            when {
+                expression { params.BOOTSTRAP_BUILDS == 'TRUE' }
             }
             steps {
-                echo "Validating ontologies..."
-                sh "echo 'METADATA plain: \$METADATA'"
-                echo "METADATA env: ${env.METADATA}"
+                echo "Bootstrapping builds..."
 
-                sh "cd workflow; . env.sh; echo \$JENA_PORT"
+                sh "cd workflow; source ./env.sh ${params.FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make bootstrap"
+                sh "cd workflow; source ./env.sh ${params.FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make location-mapping"
+            }
+        }
 
-                sh "cd workflow; . env.sh; /usr/bin/make \$WORKFLOW/Makefile"
-                sh "cd workflow; . env.sh; /usr/bin/make location-mapping"
-                sh "cd workflow; . env.sh; /usr/bin/make validate-roots"
+        stage('Validate Roots') {
+            when {
+                expression { params.VALIDATE_ROOTS == 'TRUE' }
+            }
+            steps {
+                echo "Validating ontologies roots..."
 
-                junit '**/target/workflow/tests/**/*.xml'
+                sh "cd workflow; source ./env.sh ${params.FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make validate-roots"
+            }
+}
+
+        stage('Load-Production') {
+            steps {
+                echo "Loading production..."
+                sh "cd workflow; source ./env.sh ${params.FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make load-production"
+            }
+        }
+
+        stage("Run-Reports") {
+            steps {
+                echo "Run reports (TBD)..."
+                //sh "cd workflow; source ./env.sh ${params.FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make run-reports"
             }
         }
     }
+
+    post {
+        always {
+            junit 'target/**/*.xml'
+        }
+    }
+
 }

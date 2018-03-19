@@ -52,11 +52,20 @@ export GEM_PATH="${GEM_HOME}:$(dirname $(pwd))"
 
 export PARALLEL_MAKE_OPTS="-j8 -l16"
 
-export JENA_DATASET="europa-efse"
+JENA_DATASET_NAME="europa-efse"
+if [ $# -gt 0 ]; then
+  JENA_DATASET_NAME="$1"
+fi
+export JENA_DATASET=$JENA_DATASET_NAME
 
 export JENA_HOST="localhost"
 
-export JENA_PORT="3030"
+JENA_PORT_NUMBER="8898"
+
+if [ $# -gt 1 ]; then
+  JENA_PORT_NUMBER="$2"
+fi
+export JENA_PORT=$JENA_PORT_NUMBER
 
 # Add as maven dependency
 export DOCBOOK_XHTML_XSL="${TOOLS}/docbook/xhtml/docbook.xsl"
