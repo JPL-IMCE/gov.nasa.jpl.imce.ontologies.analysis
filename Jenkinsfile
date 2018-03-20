@@ -52,7 +52,7 @@ pipeline {
                     sh 'git config user.name "Brian Satorius (as CAESAR CI agent)"'
                     sh "scripts/import.sh ${OML_REPO} ${OML_REPO_BRANCH}"
                     script {
-                        FUSEKI_DATASET_NAME = sh(returnStdout: true, script: 'echo $(cd "target/import/${OML_REPO}"; git describe --exact-match HEAD 2> /dev/null)')
+                        FUSEKI_DATASET_NAME = "commit_id_test" //sh(returnStdout: true, script: 'echo $(cd "target/import/${OML_REPO}"; git describe --exact-match HEAD 2> /dev/null)')
                     }
                 }
             }
