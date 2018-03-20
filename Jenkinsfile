@@ -47,9 +47,9 @@ pipeline {
             steps {
                 echo "Checkout OML..."
 
-                sh "bash -x scripts/import.sh ${OML_REPO_BRANCH}"
+                sh "scripts/import.sh ${OML_REPO_BRANCH}"
                 script {
-                    FUSEKI_DATASET_NAME = sh(returnStdout: true, script: 'sh . "scripts/caesar-git-services.sh; gitCommit')
+                    FUSEKI_DATASET_NAME = sh(returnStdout: true, script: 'sh . scripts/caesar-git-services.sh; gitCommit')
                 }
             }
         }
@@ -58,12 +58,12 @@ pipeline {
             steps {
                 echo "Converting OML to OWL..."
 
-                sh "bash -x scripts/oml-conversion.sh ${OML_REPO}/resources"
+                sh "scripts/oml-conversion.sh ${OML_REPO}/resources"
 
                 // dataset name is the oml repo commit id
                 echo "Creating Dataset on Fuseki ..."
                 sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}"
-                sh "bash -x ../scripts/create-dataset.sh"
+                sh "../scripts/create-dataset.sh"
             }
         }
 
