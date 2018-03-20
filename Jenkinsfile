@@ -62,12 +62,14 @@ pipeline {
             steps {
                 echo "Converting OML to OWL..."
 
-                sh "scripts/oml-conversion.sh ${OML_REPO}/resources"
+                withCredentials([usernamePassword(credentialsId: 'IMCE-CI', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                    sh "scripts/oml-conversion.sh ${OML_REPO}/resources"
 
-                // dataset name is the oml repo commit id
-                echo "Creating Dataset on Fuseki ..."
-                sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}"
-                sh "../scripts/create-dataset.sh"
+                    // dataset name is the oml repo commit id
+                    echo "Creating Dataset on Fuseki ..."
+                    sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}"
+                    sh "../scripts/create-dataset.sh"
+                }
             }
         }
 
