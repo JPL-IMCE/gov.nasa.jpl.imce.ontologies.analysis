@@ -17,8 +17,7 @@ HERE="$(pwd)"
 
 #BRANCH="$(gitBranch $TOP)"
 #PREV_URL="$(gitRemoteOriginURL $TOP)"
-
-PREV_URL="https://github.jpl.nasa.gov/imce/gov.nasa.jpl.imce.caesar.workflows.europa"
+PREV_URL="https://$GIT_USERNAME:$GIT_PASSWORD@github.jpl.nasa.gov/imce/gov.nasa.jpl.imce.caesar.workflows.europa"
 
 echo "# Current branch $BRANCH"
 
