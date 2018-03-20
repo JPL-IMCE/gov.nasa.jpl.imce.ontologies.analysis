@@ -77,7 +77,7 @@ INPUT=$1
 OUTPUT=$TOP/target/workflow/artifacts/ontologies
 
 echo "current path: $(pwd)"
-echo "output path: $OUTPUT
+echo "output path: $OUTPUT"
 
 #rm -rf $INPUT
 #mkdir $INPUT
