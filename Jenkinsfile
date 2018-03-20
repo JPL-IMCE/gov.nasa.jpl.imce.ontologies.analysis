@@ -47,7 +47,7 @@ pipeline {
             steps {
                 echo "Checkout OML..."
 
-                withCredentials([usernamePassword(credentialsId: 'IMCE-CI', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                withCredentials([usernamePassword(credentialsId: 'git-credentials-NFR-caesar.ci.token-ID', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                     sh 'git config user.email "brian.p.satorius@jpl.nasa.gov"'
                     sh 'git config user.name "Brian Satorius (as CAESAR CI agent)"'
                     sh "scripts/import.sh ${OML_REPO_BRANCH}"
@@ -62,7 +62,7 @@ pipeline {
             steps {
                 echo "Converting OML to OWL..."
 
-                withCredentials([usernamePassword(credentialsId: 'IMCE-CI', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                withCredentials([usernamePassword(credentialsId: 'git-credentials-NFR-caesar.ci.token-ID', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                     sh "scripts/oml-conversion.sh ${OML_REPO}/resources"
 
                     // dataset name is the oml repo commit id
