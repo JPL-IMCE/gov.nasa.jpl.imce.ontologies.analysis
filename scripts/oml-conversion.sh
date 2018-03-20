@@ -28,6 +28,10 @@ git clone https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.public.git
 (cd gov.nasa.jpl.imce.ontologies.public; git checkout feature/IMCEIS-1715-create-temporary-branch-of-ontologie; git status)
 cd ..
 
+CATALOG=oml.catalog.xml
+INPUT=$TOP/target/import/gov.nasa.jpl.imce.caesar.workflows.europa/resources
+OUTPUT=$TOP/target/workflow/artifacts/ontologies
+
 PUBLIC=$TOP/target/gov.nasa.jpl.imce.ontologies.public
 PUBLIC_ONTOLOGIES=$PUBLIC/ontologies
 PUBLIC_BUNDLES=$PUBLIC/bundles
@@ -69,16 +73,7 @@ OMIT="
 #PUBLIC_TAG="$(gitTag gov.nasa.jpl.imce.ontologies.public)"
 #PUBLIC_COMMIT="$(gitCommit gov.nasa.jpl.imce.ontologies.public)"
 
-
-
-CATALOG=oml.catalog.xml
-INPUT=$TOP/target/import/gov.nasa.jpl.imce.caesar.workflows.europa/resources
-
-OUTPUT=$TOP/target/workflow/artifacts/ontologies
-
 echo "current path: $(pwd)"
-echo "input path: $INPUT"
-echo "output path: $OUTPUT"
 
 #rm -rf $INPUT
 #mkdir $INPUT
@@ -91,6 +86,9 @@ echo "output path: $OUTPUT"
 #    -out ./$PREV_REPO/resources/vocabulary/asserted --clear \
 #    -t \
 #    -v:files
+
+echo "converter input path: $INPUT"
+echo "converter output path: $OUTPUT"
 
 # target/import/oml.catalog.xml
 # target/import/${OML_REPO}/resources
@@ -118,4 +116,4 @@ rm -rf $OMIT
 
 
 
-cd $TOP
+#cd $TOP
