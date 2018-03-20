@@ -28,11 +28,11 @@ git clone https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.public.git
 
 
 
-PUBLIC=gov.nasa.jpl.imce.ontologies.public
+PUBLIC=$TOP/target/gov.nasa.jpl.imce.ontologies.public
 PUBLIC_ONTOLOGIES=$PUBLIC/ontologies
 PUBLIC_BUNDLES=$PUBLIC/bundles
 IMCE=imce.jpl.nasa.gov
-PROJECT_BUNDLE_PATH=$IMCE/foundation/project
+PROJECT_BUNDLE_PATH=$TOP/target/$IMCE/foundation/project
 EUROPA=europa.jpl.nasa.gov
 OMG_ORG=www.omg.org
 PURL_ORG=purl.org
@@ -74,10 +74,10 @@ OMIT="
 CATALOG=oml.catalog.xml
 INPUT=$1
 
-cd $TOP/target/workflow/artifacts
-OUTPUT=ontologies
+OUTPUT=$TOP/target/workflow/artifacts/ontologies
 
 echo "current path: $(pwd)"
+echo "output path: $OUTPUT
 
 #rm -rf $INPUT
 #mkdir $INPUT
@@ -97,6 +97,9 @@ echo "current path: $(pwd)"
 
 
 # overwrite vocabulary with latest OWL files
+echo "public ontologies path: $PUBLIC_ONTOLOGIES"
+echo "public bundles path: $PUBLIC_BUNDLES"
+echo "project bundle path: $PROJECT_BUNDLE_PATH"
 
 rsync -av $PUBLIC_ONTOLOGIES/$IMCE $PUBLIC_ONTOLOGIES/$PURL_ORG $PUBLIC_ONTOLOGIES/$W3_ORG $OUTPUT
 
