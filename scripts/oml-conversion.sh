@@ -22,11 +22,11 @@ CONVERTER_INFO="$($TOP/target/OMLConverters/bin/omlConverter --version)"
 
 
 
-
+rm -rf target/gov.nasa.jpl.imce.ontologies.public
+cd target
 git clone https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.public.git
 (cd gov.nasa.jpl.imce.ontologies.public; git checkout feature/IMCEIS-1715-create-temporary-branch-of-ontologie; git status)
-
-
+cd ..
 
 PUBLIC=$TOP/target/gov.nasa.jpl.imce.ontologies.public
 PUBLIC_ONTOLOGIES=$PUBLIC/ontologies
