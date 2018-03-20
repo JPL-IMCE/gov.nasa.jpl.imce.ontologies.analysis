@@ -61,6 +61,8 @@ gitCaesarClone $PREV_URL $PREV_BRANCH
 PREV_TAG="$(gitTag $PREV_REPO)"
 PREV_COMMIT="$(gitCommit $PREV_REPO)"
 
+echo "current path: $(pwd)"
+
 #echo "# Checkout the branch: $BRANCH, creating it if it does not exist or merging it with $PREV_BRANCH otherwise."
 
 #gitCreateOrMergeBranch $PREV_REPO $BRANCH
