@@ -49,7 +49,7 @@ pipeline {
 
                 sh "scripts/import.sh ${OML_REPO_BRANCH}"
                 script {
-                    FUSEKI_DATASET_NAME = sh(returnStdout: true, script: 'sh scripts/caesar-git-services.sh; gitCommit')
+                    FUSEKI_DATASET_NAME = sh(returnStdout: true, script: 'echo $(cd "${OML_REPO}"; git describe --exact-match HEAD 2> /dev/null)')
                 }
             }
         }
