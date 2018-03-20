@@ -35,7 +35,7 @@ CONVERTER_INFO="$($TOP/target/OMLConverters/bin/omlConverter --version)"
 
 
 CATALOG=oml.catalog.xml
-INPUT=target/import
+INPUT=$1
 
 cd $TOP/target/workflow/artifacts
 OUTPUT=ontologies
