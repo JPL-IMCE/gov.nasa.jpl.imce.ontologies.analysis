@@ -47,11 +47,12 @@ PATH="$(pwd)/jq:$PATH"
 BRANCH_ENCODED=$(echo $BRANCH | sed -e 's/\//%2F/g')
 URL="https://imce-jenkins.jpl.nasa.gov/v1/workflow/europa/node/$BRANCH_ENCODED"
 #PREV_BRANCH="$(curl -s $URL | jq -r '. | .Inputs[0].Branch')"
-PREV_BRANCH="$1"
+PREV_BRANCH="$2"
 
 echo "# Previous branch $PREV_BRANCH"
 
-PREV_REPO="$(basename $TOP)"
+#PREV_REPO="$(basename $TOP)"
+PREV_REPO="$1"
 echo "# PREV_REPO: $PREV_REPO"
 
 echo "# Start from the branch: $PREV_BRANCH of the $PREV_REPO repo"
@@ -60,7 +61,7 @@ gitCaesarClone $PREV_URL $PREV_BRANCH
 PREV_TAG="$(gitTag $PREV_REPO)"
 PREV_COMMIT="$(gitCommit $PREV_REPO)"
 
-echo "# Checkout the branch: $BRANCH, creating it if it does not exist or merging it with $PREV_BRANCH otherwise."
+#echo "# Checkout the branch: $BRANCH, creating it if it does not exist or merging it with $PREV_BRANCH otherwise."
 
-gitCreateOrMergeBranch $PREV_REPO $BRANCH
+#gitCreateOrMergeBranch $PREV_REPO $BRANCH
 
