@@ -15,17 +15,18 @@ HERE="$(pwd)"
 
 . "$SCRIPTS/caesar-git-services.sh"
 
-BRANCH="$(gitBranch $TOP)"
+#BRANCH="$(gitBranch $TOP)"
 #PREV_URL="$(gitRemoteOriginURL $TOP)"
+
 PREV_URL="https://github.jpl.nasa.gov/imce/gov.nasa.jpl.imce.caesar.workflows.europa"
 
 echo "# Current branch $BRANCH"
 
-if brew ls --versions jq > /dev/null; then
-  echo "js is installed; skipping installation"
-else
-  brew install jq
-fi
+#if brew ls --versions jq > /dev/null; then
+#  echo "js is installed; skipping installation"
+#else
+#  brew install jq
+#fi
 
 #if [[ ! -d "jq" ]]; then
 #    echo "Download jq - json processor"
@@ -42,7 +43,8 @@ PATH="$(pwd)/jq:$PATH"
 #TODO: loop through the inputs array
 BRANCH_ENCODED=$(echo $BRANCH | sed -e 's/\//%2F/g')
 URL="https://imce-jenkins.jpl.nasa.gov/v1/workflow/europa/node/$BRANCH_ENCODED"
-PREV_BRANCH="$(curl -s $URL | jq -r '. | .Inputs[0].Branch')"
+#PREV_BRANCH="$(curl -s $URL | jq -r '. | .Inputs[0].Branch')"
+PREV_BRANCH="$1"
 
 echo "# Previous branch $PREV_BRANCH"
 
@@ -50,8 +52,6 @@ PREV_REPO="$(basename $TOP)"
 echo "# PREV_REPO: $PREV_REPO"
 
 echo "# Start from the branch: $PREV_BRANCH of the $PREV_REPO repo"
-
-if false ; then
 
 gitCaesarClone $PREV_URL $PREV_BRANCH
 PREV_TAG="$(gitTag $PREV_REPO)"
@@ -61,4 +61,3 @@ echo "# Checkout the branch: $BRANCH, creating it if it does not exist or mergin
 
 gitCreateOrMergeBranch $PREV_REPO $BRANCH
 
-fi
