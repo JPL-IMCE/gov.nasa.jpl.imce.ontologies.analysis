@@ -40,6 +40,8 @@ INPUT=$1
 cd $TOP/target/workflow/artifacts
 OUTPUT=ontologies
 
+echo "current path: $(pwd)"
+
 #rm -rf $INPUT
 #mkdir $INPUT
 #rsync -av $1/ $INPUT
