@@ -19,6 +19,43 @@ HERE="$(pwd)"
 
 CONVERTER_INFO="$($TOP/target/OMLConverters/bin/omlConverter --version)"
 
+
+
+
+
+git clone https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.public.git
+#(cd gov.nasa.jpl.imce.ontologies.public; git checkout feature/IMCEIS-1715-create-temporary-branch-of-ontologie; git status)
+
+
+
+PUBLIC=gov.nasa.jpl.imce.ontologies.public
+PUBLIC_ONTOLOGIES=$PUBLIC/ontologies
+PUBLIC_BUNDLES=$PUBLIC/bundles
+IMCE=imce.jpl.nasa.gov
+PROJECT_BUNDLE_PATH=$IMCE/foundation/project
+EUROPA=europa.jpl.nasa.gov
+OMG_ORG=www.omg.org
+PURL_ORG=purl.org
+W3_ORG=www.w3.org
+OMIT="
+  $OUTPUT/$IMCE/math
+  $OUTPUT/$IMCE/skeleton
+  $OUTPUT/$IMCE/discipline/mechanical
+  $OUTPUT/$IMCE/discipline/ontological-behavior
+  $OUTPUT/$IMCE/discipline/risk
+  $OUTPUT/$IMCE/discipline/state-analysis
+  $OUTPUT/$IMCE/foundation/owl2-mof2
+  $OUTPUT/$IMCE/foundation/time
+  $OUTPUT/$IMCE/oml/provenance
+  $OUTPUT/$IMCE/$OMG_ORG
+  $OUTPUT/$IMCE/*/*/*-embedding.owl
+"
+
+
+
+
+
+
 #PREV_URL="$(gitRemoteOriginURL $TOP)"
 #PREV_REPO="$(basename $TOP)"
 
@@ -57,5 +94,24 @@ echo "current path: $(pwd)"
 # target/import/oml.catalog.xml
 # target/import/${OML_REPO}/resources
 "$TOP/target/OMLConverters/bin/omlConverter" text $INPUT/$CATALOG --output $OUTPUT --owl --clear
+
+
+
+
+
+# overwrite vocabulary with latest OWL files
+
+rsync -av $PUBLIC_ONTOLOGIES/$IMCE $PUBLIC_ONTOLOGIES/$PURL_ORG $PUBLIC_ONTOLOGIES/$W3_ORG $OUTPUT
+
+# add cached project bundle
+
+mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
+rsync -av --exclude='**-embedding*' $PUBLIC_BUNDLES/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH
+
+# omit unused vocabulary
+rm -rf $OMIT
+
+
+
 
 cd $TOP
