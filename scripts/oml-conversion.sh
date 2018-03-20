@@ -98,13 +98,16 @@ echo "output path: $OUTPUT"
 
 
 # overwrite vocabulary with latest OWL files
-echo "public ontologies path: $PUBLIC_ONTOLOGIES"
-echo "public bundles path: $PUBLIC_BUNDLES"
-echo "project bundle path: $PROJECT_BUNDLE_PATH"
+echo "imce path: $TOP/target/$PUBLIC_ONTOLOGIES/$IMCE"
+echo "purl_org path: $TOP/target/$PUBLIC_ONTOLOGIES/$PURL_ORG"
+echo "w3_org path: $TOP/target/$PUBLIC_ONTOLOGIES/$W3_ORG"
+echo "output path: $OUTPUT"
 
 rsync -av $TOP/target/$PUBLIC_ONTOLOGIES/$IMCE $TOP/target/$PUBLIC_ONTOLOGIES/$PURL_ORG $TOP/target/$PUBLIC_ONTOLOGIES/$W3_ORG $OUTPUT
 
 # add cached project bundle
+echo "bundle input path: $TOP/target/workflow/artifacts/$PUBLIC_BUNDLES/$PROJECT_BUNDLE_PATH"
+echo "bundle output path: $OUTPUT/$PROJECT_BUNDLE_PATH"
 
 mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
 rsync -av --exclude='**-embedding*' $TOP/target/workflow/artifacts/$PUBLIC_BUNDLES/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH
