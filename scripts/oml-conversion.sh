@@ -24,7 +24,7 @@ CONVERTER_INFO="$($TOP/target/OMLConverters/bin/omlConverter --version)"
 
 
 git clone https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.public.git
-#(cd gov.nasa.jpl.imce.ontologies.public; git checkout feature/IMCEIS-1715-create-temporary-branch-of-ontologie; git status)
+(cd gov.nasa.jpl.imce.ontologies.public; git checkout feature/IMCEIS-1715-create-temporary-branch-of-ontologie; git status)
 
 
 
@@ -94,9 +94,6 @@ echo "current path: $(pwd)"
 # target/import/oml.catalog.xml
 # target/import/${OML_REPO}/resources
 "$TOP/target/OMLConverters/bin/omlConverter" text $INPUT/$CATALOG --output $OUTPUT --owl --clear
-
-
-
 
 
 # overwrite vocabulary with latest OWL files
