@@ -72,11 +72,12 @@ OMIT="
 
 
 CATALOG=oml.catalog.xml
-INPUT=$1
+INPUT=$TOP/target/import/gov.nasa.jpl.imce.caesar.workflows.europa/resources
 
 OUTPUT=$TOP/target/workflow/artifacts/ontologies
 
 echo "current path: $(pwd)"
+echo "input path: $INPUT"
 echo "output path: $OUTPUT"
 
 #rm -rf $INPUT
