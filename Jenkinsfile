@@ -67,8 +67,7 @@ pipeline {
 
                     // dataset name is the oml repo commit id
                     echo "Creating Dataset on Fuseki name  ${FUSEKI_DATASET_NAME} port number ${params.FUSEKI_PORT_NUMBER}"
-                    sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}"
-                    sh "scripts/create-dataset.sh"
+                    sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; ../scripts/create-dataset.sh"
                 }
             }
         }
