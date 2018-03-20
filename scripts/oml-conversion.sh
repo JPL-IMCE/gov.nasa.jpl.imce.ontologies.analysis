@@ -32,15 +32,17 @@ CONVERTER_INFO="$($TOP/target/OMLConverters/bin/omlConverter --version)"
 #PUBLIC_TAG="$(gitTag gov.nasa.jpl.imce.ontologies.public)"
 #PUBLIC_COMMIT="$(gitCommit gov.nasa.jpl.imce.ontologies.public)"
 
-cd $TOP/target/workflow/artifacts
+
 
 CATALOG=oml.catalog.xml
-INPUT=oml-input
+INPUT=target/import
+
+cd $TOP/target/workflow/artifacts
 OUTPUT=ontologies
 
-rm -rf $INPUT
-mkdir $INPUT
-rsync -av $1/ $INPUT
+#rm -rf $INPUT
+#mkdir $INPUT
+#rsync -av $1/ $INPUT
 
 #echo "# Clear the destination folder & copy IMCE vocabularies to ./$PREV_REPO/resources/vocabulary/asserted/"
 #"$TOP/target/OMLConverters/bin/omlConverter" \

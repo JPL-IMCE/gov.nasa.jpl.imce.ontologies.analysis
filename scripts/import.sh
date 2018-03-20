@@ -62,6 +62,8 @@ PREV_TAG="$(gitTag $PREV_REPO)"
 PREV_COMMIT="$(gitCommit $PREV_REPO)"
 
 echo "current path: $(pwd)"
+#current path: /opt/local/workspace/IMCE/gov.nasa.jpl.imce.ontologies.analysis/target/import
+
 
 #echo "# Checkout the branch: $BRANCH, creating it if it does not exist or merging it with $PREV_BRANCH otherwise."
 
