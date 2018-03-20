@@ -52,7 +52,7 @@ pipeline {
                     sh 'git config user.name "Brian Satorius (as CAESAR CI agent)"'
                     sh "scripts/import.sh ${OML_REPO} ${OML_REPO_BRANCH}"
                     script {
-                        FUSEKI_DATASET_NAME = sh(returnStdout: true, script: 'echo $(cd "${OML_REPO}"; git describe --exact-match HEAD 2> /dev/null)')
+                        FUSEKI_DATASET_NAME = sh(returnStdout: true, script: 'echo $(cd "target/import/${OML_REPO}"; git describe --exact-match HEAD 2> /dev/null)')
                     }
                 }
             }
@@ -63,7 +63,7 @@ pipeline {
                 echo "Converting OML to OWL..."
 
                 withCredentials([usernamePassword(credentialsId: 'git-credentials-NFR-caesar.ci.token-ID', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                    sh "scripts/oml-conversion.sh ${OML_REPO}/resources"
+                    sh "scripts/oml-conversion.sh target/import/${OML_REPO}/resources"
 
                     // dataset name is the oml repo commit id
                     echo "Creating Dataset on Fuseki name  ${FUSEKI_DATASET_NAME} port number ${params.FUSEKI_PORT_NUMBER}"
