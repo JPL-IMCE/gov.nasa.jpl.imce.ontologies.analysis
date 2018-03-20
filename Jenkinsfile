@@ -47,9 +47,13 @@ pipeline {
             steps {
                 echo "Checkout OML..."
 
-                sh "scripts/import.sh ${OML_REPO_BRANCH}"
-                script {
-                    FUSEKI_DATASET_NAME = sh(returnStdout: true, script: 'echo $(cd "${OML_REPO}"; git describe --exact-match HEAD 2> /dev/null)')
+                withCredentials([usernamePassword(credentialsId: 'IMCE-CI', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                    sh 'git config user.email "brian.p.satorius@jpl.nasa.gov"'
+                    sh 'git config user.name "Brian Satorius (as CAESAR CI agent)"'
+                    sh "scripts/import.sh ${OML_REPO_BRANCH}"
+                    script {
+                        FUSEKI_DATASET_NAME = sh(returnStdout: true, script: 'echo $(cd "${OML_REPO}"; git describe --exact-match HEAD 2> /dev/null)')
+                    }
                 }
             }
         }
