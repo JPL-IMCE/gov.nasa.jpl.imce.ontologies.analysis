@@ -12,7 +12,7 @@ DATE="$(date)"
 
 /bin/rm -rf "$TOP/target/$NAME"
 mkdir -p "$TOP/target/$NAME"
-cd "$TOP/target/$NAME"
+#cd "$TOP/target/$NAME"
 HERE="$(pwd)"
 
 . "$SCRIPTS/caesar-git-services.sh"
@@ -52,6 +52,8 @@ OUTPUT=ontologies
 #    -t \
 #    -v:files
 
+# target/import/oml.catalog.xml
+# target/import/${OML_REPO}/resources
 "$TOP/target/OMLConverters/bin/omlConverter" text $INPUT/$CATALOG --output $OUTPUT --owl --clear
 
 cd $TOP
