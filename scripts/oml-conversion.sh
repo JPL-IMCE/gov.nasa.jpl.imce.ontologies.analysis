@@ -13,6 +13,8 @@ DATE="$(date)"
 /bin/rm -rf "$TOP/target/$NAME"
 mkdir -p "$TOP/target/$NAME"
 #cd "$TOP/target/$NAME"
+
+# The following path is required for the current analysis workflow build process
 cd "$TOP/target/workflow/artifacts"
 HERE="$(pwd)"
 
@@ -21,14 +23,7 @@ HERE="$(pwd)"
 CONVERTER_INFO="$($TOP/target/OMLConverters/bin/omlConverter --version)"
 
 
-
 # clones ontologies public into the workspace, this is a temp workaround to get vocabulary updates
-#rm -rf target/gov.nasa.jpl.imce.ontologies.public
-#cd target
-#git clone https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.public.git
-#(cd gov.nasa.jpl.imce.ontologies.public; git checkout feature/IMCEIS-1715-create-temporary-branch-of-ontologie; git status)
-#cd ..
-
 rm -rf gov.nasa.jpl.imce.ontologies.public
 git clone https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.public.git
 (cd gov.nasa.jpl.imce.ontologies.public; git checkout feature/IMCEIS-1715-create-temporary-branch-of-ontologie; git status)
@@ -36,10 +31,8 @@ git clone https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.public.git
 
 CATALOG=oml.catalog.xml
 INPUT=$TOP/$1
-#OUTPUT=$TOP/target/workflow/artifacts/ontologies
 OUTPUT=ontologies
 
-#PUBLIC=$TOP/target/gov.nasa.jpl.imce.ontologies.public
 PUBLIC=gov.nasa.jpl.imce.ontologies.public
 PUBLIC_ONTOLOGIES=$PUBLIC/ontologies
 PUBLIC_BUNDLES=$PUBLIC/bundles
