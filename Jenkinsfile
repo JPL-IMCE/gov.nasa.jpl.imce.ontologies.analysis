@@ -15,6 +15,8 @@ pipeline {
 
         string(name: 'OML_REPO', defaultValue: 'undefined', description: 'Repository where OML data to be converted is stored.')
         string(name: 'OML_REPO_BRANCH', defaultValue: 'undefined', description: 'Repository branch where OML data version to be converted is stored.')
+        string(name: 'ONTOLOGY_REPO', defaultValue: 'gov.nasa.jpl.imce.ontologies.public', description: 'Repository where public ontology data is stored.')
+        string(name: 'ONTOLOGY_REPO_BRANCH', defaultValue: 'feature/IMCEIS-1715-create-temporary-branch-of-ontologie', description: 'Repository branch where public ontology data version is stored.')
 
         string(name: 'FUSEKI_PORT_NUMBER', defaultValue: '3030', description: 'Port number of the Fuseki database.')
     }
@@ -55,6 +57,13 @@ pipeline {
                         FUSEKI_DATASET_NAME = "commit_id_test" //sh(returnStdout: true, script: 'echo $(cd "target/import/${OML_REPO}"; git describe --exact-match HEAD 2> /dev/null)')
                     }
                 }
+
+                echo "Checkout vocabulary..."
+                withCredentials([usernamePassword(credentialsId: 'git-credentials-NFR-caesar.ci.token-ID', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                    sh 'git config user.email "brian.p.satorius@jpl.nasa.gov"'
+                    sh 'git config user.name "Brian Satorius (as CAESAR CI agent)"'
+                    sh "scripts/import-vocabulary.sh ${ONTOLOGY_REPO} ${ONTOLOGY_REPO_BRANCH}"
+                }
             }
         }
 
@@ -62,9 +71,10 @@ pipeline {
             steps {
                 echo "Converting OML to OWL..."
 
-                withCredentials([usernamePassword(credentialsId: 'git-credentials-NFR-caesar.ci.token-ID', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                    sh "scripts/oml-conversion.sh target/import/${OML_REPO}/resources"
-                }
+                //withCredentials([usernamePassword(credentialsId: 'git-credentials-NFR-caesar.ci.token-ID', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                    //sh "scripts/oml-conversion.sh target/import/${OML_REPO}/resources"
+                //}
+                sh "scripts/oml-conversion.sh ${OML_REPO}/resources"
             }
         }
 
