@@ -18,22 +18,23 @@ mkdir -p "$TOP/target/$NAME"
 cd "$TOP/target/workflow/artifacts"
 HERE="$(pwd)"
 
-. "$SCRIPTS/caesar-git-services.sh"
+#. "$SCRIPTS/caesar-git-services.sh"
 
 CONVERTER_INFO="$($TOP/target/OMLConverters/bin/omlConverter --version)"
 
 
 # clones ontologies public into the workspace, this is a temp workaround to get vocabulary updates
-rm -rf gov.nasa.jpl.imce.ontologies.public
-git clone https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.public.git
-(cd gov.nasa.jpl.imce.ontologies.public; git checkout feature/IMCEIS-1715-create-temporary-branch-of-ontologie; git status)
-
+#rm -rf gov.nasa.jpl.imce.ontologies.public
+#git clone https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.public.git
+#(cd gov.nasa.jpl.imce.ontologies.public; git checkout feature/IMCEIS-1715-create-temporary-branch-of-ontologie; git status)
+OML_IMPORT=$TOP/target/import
+PUBLIC_IMPORT=$TOP/target/import-vocabulary
 
 CATALOG=oml.catalog.xml
-INPUT=$TOP/$1
+INPUT=$OML_IMPORT/$1
 OUTPUT=ontologies
 
-PUBLIC=gov.nasa.jpl.imce.ontologies.public
+PUBLIC=$PUBLIC_IMPORT/gov.nasa.jpl.imce.ontologies.public
 PUBLIC_ONTOLOGIES=$PUBLIC/ontologies
 PUBLIC_BUNDLES=$PUBLIC/bundles
 IMCE=imce.jpl.nasa.gov
