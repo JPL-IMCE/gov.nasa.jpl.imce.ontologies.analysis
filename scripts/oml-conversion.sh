@@ -29,7 +29,8 @@ git clone https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.public.git
 cd ..
 
 CATALOG=oml.catalog.xml
-INPUT=$TOP/target/import/gov.nasa.jpl.imce.caesar.workflows.europa/resources
+#INPUT=$TOP/target/import/gov.nasa.jpl.imce.caesar.workflows.europa/resources
+INPUT =$TOP/$1
 OUTPUT=$TOP/target/workflow/artifacts/ontologies
 
 PUBLIC=$TOP/target/gov.nasa.jpl.imce.ontologies.public
