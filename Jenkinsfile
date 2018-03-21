@@ -64,10 +64,6 @@ pipeline {
 
                 withCredentials([usernamePassword(credentialsId: 'git-credentials-NFR-caesar.ci.token-ID', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                     sh "scripts/oml-conversion.sh target/import/${OML_REPO}/resources"
-
-                    // dataset name is the oml repo commit id
-                    echo "Creating Dataset on Fuseki name  ${FUSEKI_DATASET_NAME} port number ${params.FUSEKI_PORT_NUMBER}"
-                    sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; ../scripts/create-dataset.sh"
                 }
             }
         }
@@ -100,6 +96,10 @@ pipeline {
                 expression { params.LOAD_PRODUCTION == 'TRUE' }
             }
             steps {
+                // dataset name is the oml repo commit id
+                echo "Creating Dataset on Fuseki name  ${FUSEKI_DATASET_NAME} port number ${params.FUSEKI_PORT_NUMBER}"
+                sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; ../scripts/create-dataset.sh"
+
                 echo "Loading production..."
                 sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make load-production"
             }
