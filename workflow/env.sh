@@ -13,8 +13,8 @@ export ONTOLOGIES=$(dirname $(pwd))/target/ontologies
 FUSEKI_PROJ="$(dirname $(dirname "$(pwd)"))/gov.nasa.jpl.imce.ontologies.fuseki"
 export FUSEKI_HOME="$FUSEKI_PROJ/target/fuseki"
 
-#export FUSEKI_BIN="${FUSEKI_HOME}/bin"
-export FUSEKI_BIN="/opt/local/apache-jena-fuseki-3.6.0/bin"
+export FUSEKI_BIN="${FUSEKI_HOME}/bin"
+#export FUSEKI_BIN="/opt/local/apache-jena-fuseki-3.6.0/bin"
 
 # Read-only
 export TOOLS=$(dirname $(pwd))/target/tools
