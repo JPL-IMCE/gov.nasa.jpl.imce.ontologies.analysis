@@ -13,6 +13,7 @@ DATE="$(date)"
 /bin/rm -rf "$TOP/target/$NAME"
 mkdir -p "$TOP/target/$NAME"
 #cd "$TOP/target/$NAME"
+cd "$TOP/target/workflow/artifacts"
 HERE="$(pwd)"
 
 . "$SCRIPTS/caesar-git-services.sh"
@@ -21,19 +22,25 @@ CONVERTER_INFO="$($TOP/target/OMLConverters/bin/omlConverter --version)"
 
 
 
+# clones ontologies public into the workspace, this is a temp workaround to get vocabulary updates
+#rm -rf target/gov.nasa.jpl.imce.ontologies.public
+#cd target
+#git clone https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.public.git
+#(cd gov.nasa.jpl.imce.ontologies.public; git checkout feature/IMCEIS-1715-create-temporary-branch-of-ontologie; git status)
+#cd ..
 
-rm -rf target/gov.nasa.jpl.imce.ontologies.public
-cd target
+rm -rf gov.nasa.jpl.imce.ontologies.public
 git clone https://github.com/JPL-IMCE/gov.nasa.jpl.imce.ontologies.public.git
 (cd gov.nasa.jpl.imce.ontologies.public; git checkout feature/IMCEIS-1715-create-temporary-branch-of-ontologie; git status)
-cd ..
+
 
 CATALOG=oml.catalog.xml
-#INPUT=$TOP/target/import/gov.nasa.jpl.imce.caesar.workflows.europa/resources
-INPUT =$TOP/$1
-OUTPUT=$TOP/target/workflow/artifacts/ontologies
+INPUT=$TOP/$1
+#OUTPUT=$TOP/target/workflow/artifacts/ontologies
+OUTPUT=ontologies
 
-PUBLIC=$TOP/target/gov.nasa.jpl.imce.ontologies.public
+#PUBLIC=$TOP/target/gov.nasa.jpl.imce.ontologies.public
+PUBLIC=gov.nasa.jpl.imce.ontologies.public
 PUBLIC_ONTOLOGIES=$PUBLIC/ontologies
 PUBLIC_BUNDLES=$PUBLIC/bundles
 IMCE=imce.jpl.nasa.gov
@@ -91,30 +98,15 @@ echo "current path: $(pwd)"
 echo "converter input path: $INPUT"
 echo "converter output path: $OUTPUT"
 
-# target/import/oml.catalog.xml
-# target/import/${OML_REPO}/resources
 "$TOP/target/OMLConverters/bin/omlConverter" text $INPUT/$CATALOG --output $OUTPUT --owl --clear
 
 
 # overwrite vocabulary with latest OWL files
-echo "imce path: $PUBLIC_ONTOLOGIES/$IMCE"
-echo "purl_org path: $PUBLIC_ONTOLOGIES/$PURL_ORG"
-echo "w3_org path: $PUBLIC_ONTOLOGIES/$W3_ORG"
-echo "output path: $OUTPUT"
-
 rsync -av $PUBLIC_ONTOLOGIES/$IMCE $PUBLIC_ONTOLOGIES/$PURL_ORG $PUBLIC_ONTOLOGIES/$W3_ORG $OUTPUT
 
 # add cached project bundle
-echo "bundle input path: $PUBLIC_BUNDLES/$PROJECT_BUNDLE_PATH"
-echo "bundle output path: $OUTPUT/$PROJECT_BUNDLE_PATH"
-
 mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
 rsync -av --exclude='**-embedding*' $PUBLIC_BUNDLES/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH
 
 # omit unused vocabulary
 rm -rf $OMIT
-
-
-
-
-#cd $TOP
