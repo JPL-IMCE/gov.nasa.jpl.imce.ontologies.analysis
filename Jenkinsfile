@@ -55,7 +55,7 @@ pipeline {
                     sh "scripts/import.sh ${OML_REPO} ${OML_REPO_BRANCH}"
                     script {
                         FUSEKI_DATASET_NAME = sh (
-                            script: 'git rev-parse HEAD',
+                            script: 'cd "target/import/${OML_REPO}"; git rev-parse HEAD',
                             returnStdout: true
                         ).trim()
                         echo "FUSEKI_DATASET_NAME: ${FUSEKI_DATASET_NAME}"
