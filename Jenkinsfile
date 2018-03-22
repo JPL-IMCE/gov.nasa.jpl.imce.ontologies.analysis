@@ -13,8 +13,8 @@ pipeline {
         string(name: 'LOAD_PRODUCTION', defaultValue: 'TRUE', description: 'Whether or not to load data. This calculate entailments and load data to fuseki.')
         string(name: 'RUN_REPORTS', defaultValue: 'FALSE', description: 'Whether or not to run reports.')
 
-        string(name: 'OML_REPO', defaultValue: 'undefined', description: 'Repository where OML data to be converted is stored.')
-        string(name: 'OML_REPO_BRANCH', defaultValue: 'undefined', description: 'Repository branch where OML data version to be converted is stored.')
+        string(name: 'OML_REPO', defaultValue: 'gov.nasa.jpl.imce.caesar.workflows.europa', description: 'Repository where OML data to be converted is stored.')
+        string(name: 'OML_REPO_BRANCH', defaultValue: 'user-model/authored/efse/europa', description: 'Repository branch where OML data version to be converted is stored.')
         string(name: 'ONTOLOGY_REPO', defaultValue: 'gov.nasa.jpl.imce.ontologies.public', description: 'Repository where public ontology data is stored.')
         string(name: 'ONTOLOGY_REPO_BRANCH', defaultValue: 'feature/IMCEIS-1715-create-temporary-branch-of-ontologie', description: 'Repository branch where public ontology data version is stored.')
 
