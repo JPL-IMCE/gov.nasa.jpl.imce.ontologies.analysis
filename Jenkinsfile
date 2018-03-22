@@ -36,7 +36,7 @@ pipeline {
 
                 script {
                     currentBuild.displayName = "${OML_REPO_BRANCH}"
-                    currentBuild.description = "Analyzing ${OML_REPO} branch ${BRANCH}"
+                    currentBuild.description = "Analyzing ${OML_REPO} branch ${OML_REPO_BRANCH}"
                 }
 
                 sh "env"
