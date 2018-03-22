@@ -34,6 +34,11 @@ pipeline {
             steps {
                 echo "Setting up environment..."
 
+                script {
+                    currentBuild.displayName = "${OML_REPO_BRANCH}""
+                    currentBuild.description = "Analyzing ${OML_REPO} branch ${BRANCH}"
+                }
+
                 sh "env"
                 sh "sbt $SBT_OPTIONS clean cleanFiles"
                 sh "sbt $SBT_OPTIONS setupTools setupExportResults"
