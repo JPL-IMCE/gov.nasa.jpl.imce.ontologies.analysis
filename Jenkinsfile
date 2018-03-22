@@ -53,15 +53,23 @@ pipeline {
                     sh 'git config user.email "brian.p.satorius@jpl.nasa.gov"'
                     sh 'git config user.name "Brian Satorius (as CAESAR CI agent)"'
                     sh "scripts/import.sh ${OML_REPO} ${OML_REPO_BRANCH}"
+                    // fetch the oml repo commit id as fuseki dataset name
                     script {
-                        FUSEKI_DATASET_NAME = sh (
-                            script: 'cd "target/import/${OML_REPO}"; git rev-parse HEAD',
-                            returnStdout: true
+                        FUSEKI_DATASET_NAME = sh(
+                                script: 'cd "target/import/${OML_REPO}"; git rev-parse HEAD',
+                                returnStdout: true
                         ).trim()
                         echo "FUSEKI_DATASET_NAME: ${FUSEKI_DATASET_NAME}"
                     }
                 }
+            }
+        }
 
+        stage('Checkout Vocabulary') {
+            when {
+                expression { params.ONTOLOGY_REPO != 'undefined' }
+            }
+            steps {
                 echo "Checkout vocabulary..."
                 withCredentials([usernamePassword(credentialsId: 'git-credentials-NFR-caesar.ci.token-ID', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                     sh 'git config user.email "brian.p.satorius@jpl.nasa.gov"'
@@ -75,10 +83,7 @@ pipeline {
             steps {
                 echo "Converting OML to OWL..."
 
-                //withCredentials([usernamePassword(credentialsId: 'git-credentials-NFR-caesar.ci.token-ID', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                    //sh "scripts/oml-conversion.sh target/import/${OML_REPO}/resources"
-                //}
-                sh "scripts/oml-conversion.sh ${OML_REPO}/resources"
+                sh "scripts/oml-conversion.sh ${OML_REPO}/resources ${ONTOLOGY_REPO}"
             }
         }
 
@@ -110,7 +115,6 @@ pipeline {
                 expression { params.LOAD_PRODUCTION == 'TRUE' }
             }
             steps {
-                // dataset name is the oml repo commit id
                 echo "Creating Dataset on Fuseki name  ${FUSEKI_DATASET_NAME} port number ${params.FUSEKI_PORT_NUMBER}"
                 sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; ../scripts/create-dataset.sh"
 
@@ -125,7 +129,7 @@ pipeline {
             }
             steps {
                 echo "Run reports (TBD)..."
-                //sh "cd workflow; source ./env.sh ${params.FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make run-reports"
+                sh "cd workflow; source ./env.sh ${params.FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make run-reports"
             }
         }
     }

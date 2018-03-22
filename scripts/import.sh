@@ -18,8 +18,6 @@ HERE="$(pwd)"
 echo "GIT_USERNAME: $GIT_USERNAME"
 echo "GIT_PASSWORD: $GIT_PASSWORD"
 
-#PREV_URL="https://$GIT_USERNAME:$GIT_PASSWORD@github.jpl.nasa.gov/imce/gov.nasa.jpl.imce.caesar.workflows.europa"
-
 #echo "# Current branch $BRANCH"
 
 #if brew ls --versions jq > /dev/null; then
@@ -55,8 +53,6 @@ PREV_COMMIT="$(gitCommit $PREV_REPO)"
 echo "# prev_commit: $PREV_COMMIT"
 
 echo "current path: $(pwd)"
-#current path: /opt/local/workspace/IMCE/gov.nasa.jpl.imce.ontologies.analysis/target/import
-
 
 #echo "# Checkout the branch: $BRANCH, creating it if it does not exist or merging it with $PREV_BRANCH otherwise."
 
