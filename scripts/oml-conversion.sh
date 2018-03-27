@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -o errexit
+
 FILE="$(basename $0)"
 NAME="${FILE%.sh}"
 SCRIPTS="$(cd $(dirname $0); pwd)"
