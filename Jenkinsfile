@@ -11,7 +11,7 @@ pipeline {
         string(name: 'BOOTSTRAP_BUILDS', defaultValue: 'TRUE', description: 'Whether or not to bootstrap subsequent builds and calculate dependencies. It makes no sense to skip this step.')
         string(name: 'VALIDATE_ROOTS', defaultValue: 'TRUE', description: 'Whether or not to validate ontologies.')
         string(name: 'LOAD_PRODUCTION', defaultValue: 'TRUE', description: 'Whether or not to load data. This calculate entailments and load data to fuseki.')
-        string(name: 'RUN_REPORTS', defaultValue: 'FALSE', description: 'Whether or not to run reports.')
+        string(name: 'RUN_REPORTS', defaultValue: 'TRUE', description: 'Whether or not to run reports.')
 
         string(name: 'OML_REPO', defaultValue: 'gov.nasa.jpl.imce.caesar.workflows.europa', description: 'Repository where OML data to be converted is stored.')
         string(name: 'OML_REPO_BRANCH', defaultValue: 'user-model/authored/efse/europa', description: 'Repository branch where OML data version to be converted is stored.')
@@ -97,7 +97,7 @@ pipeline {
                 expression { params.BOOTSTRAP_BUILDS == 'TRUE' }
             }
             steps {
-                echo "Bootstrapping builds..."
+                echo "Bootstrapping builds, and location mapping..."
 
                 sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make bootstrap"
                 sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make location-mapping"
@@ -109,13 +109,13 @@ pipeline {
                 expression { params.VALIDATE_ROOTS == 'TRUE' }
             }
             steps {
-                echo "Validating ontologies roots..."
+                echo "Validating ontologies roots, running consistency and satisfiability reasoner..."
 
                 sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make validate-roots"
             }
-}
+        }
 
-        stage('Load-Production') {
+        stage('Load Production') {
             when {
                 expression { params.LOAD_PRODUCTION == 'TRUE' }
             }
@@ -123,17 +123,18 @@ pipeline {
                 echo "Creating Dataset on Fuseki name  ${FUSEKI_DATASET_NAME} port number ${params.FUSEKI_PORT_NUMBER}"
                 sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; ../scripts/create-dataset.sh"
 
-                echo "Loading production..."
+                echo "Calculating entailments and Loading the dataset to Fuseki..."
                 sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make load-production"
             }
         }
 
-        stage("Run-Reports") {
+        stage("Run Reports") {
             when {
                 expression { params.RUN_REPORTS == 'TRUE' }
             }
             steps {
-                echo "Run reports (TBD)..."
+                echo "Run audits and reports..."
+                sh "cd workflow; source ./env.sh ${params.FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; load-prefix.sh"
                 sh "cd workflow; source ./env.sh ${params.FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make run-reports"
             }
         }
