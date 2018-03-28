@@ -14,11 +14,13 @@ pipeline {
         string(name: 'RUN_REPORTS', defaultValue: 'TRUE', description: 'Whether or not to run reports.')
 
         string(name: 'OML_REPO', defaultValue: 'gov.nasa.jpl.imce.caesar.workflows.europa', description: 'Repository where OML data to be converted is stored.')
-        string(name: 'OML_REPO_BRANCH', defaultValue: 'user-model/authored/efse/europa', description: 'Repository branch where OML data version to be converted is stored.')
+        string(name: 'OML_REPO_BRANCH', defaultValue: 'user-model/generated/efse/europa', description: 'Repository branch where OML data version to be converted is stored.')
         string(name: 'ONTOLOGY_REPO', defaultValue: 'gov.nasa.jpl.imce.ontologies.public', description: 'Repository where public ontology data is stored.')
         string(name: 'ONTOLOGY_REPO_BRANCH', defaultValue: 'feature/IMCEIS-1715-create-temporary-branch-of-ontologie', description: 'Repository branch where public ontology data version is stored.')
 
         string(name: 'FUSEKI_PORT_NUMBER', defaultValue: '3030', description: 'Port number of the Fuseki database.')
+        string(name: 'AUDITS_TREE_PATH', defaultValue: 'undefined', description: 'Custom auditing data path.')
+        string(name: 'REPORTS_TREE_PATH', defaultValue: 'undefined', description: 'Custom reporting data path.')
     }
 
     environment {
@@ -135,7 +137,7 @@ pipeline {
             steps {
                 echo "Run audits and reports..."
                 sh "cd workflow; source ./env.sh ${params.FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; load-prefix.sh"
-                sh "cd workflow; source ./env.sh ${params.FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make run-reports"
+                sh "cd workflow; source ./env.sh ${params.FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER} ${params.AUDITS_TREE_PATH} ${params.REPORTS_TREE_PATH}; /usr/bin/make run-reports"
             }
         }
     }
