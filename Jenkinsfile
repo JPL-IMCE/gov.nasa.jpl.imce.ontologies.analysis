@@ -136,8 +136,8 @@ pipeline {
             }
             steps {
                 echo "Run audits and reports..."
-                sh "cd workflow; source ./env.sh ${params.FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; ./load-prefix.sh"
-                sh "cd workflow; source ./env.sh ${params.FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER} ${params.AUDITS_TREE_PATH} ${params.REPORTS_TREE_PATH}; /usr/bin/make run-reports"
+                sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; ./load-prefix.sh"
+                sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER} ${params.AUDITS_TREE_PATH} ${params.REPORTS_TREE_PATH}; /usr/bin/make run-reports"
             }
         }
     }
