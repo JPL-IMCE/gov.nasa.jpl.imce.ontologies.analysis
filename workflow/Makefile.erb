@@ -11,7 +11,7 @@
 
 ARTIFACTS_DIR ?= <%= ARTIFACTS_DIR = 'artifacts' %>
 AUDITS_DIR ?= tests/audits
-AUDITS_TREE ?= ../../data/Audit/export/caesar-demo
+AUDITS_TREE ?= $(AUDITS_TREE_PATH)
 AUDITS_TEST_FILE ?= $(AUDITS_DIR)/run-audits$(XML_SUFFIX)
 
 BACKBONE_DISJOINTS ?= Entity ReifiedObjectProperty ReifiedStructuredDataProperty StructuredDatatype
@@ -72,7 +72,7 @@ OWL_SUFFIX = .owl
 PROJECT_BUNDLE_IRI ?= <%= PROJECT_BUNDLE_IRI = 'http://imce.jpl.nasa.gov/foundation/project/project-bundle' %>
 
 REPORTS_DIR ?= $(ARTIFACTS_DIR)/reports
-REPORTS_TREE ?= ../../data/Report/export/caesar-demo
+REPORTS_TREE ?= $(REPORTS_TREE_PATH)
 REPORTS_TEST_FILE ?= $(REPORTS_DIR)/run-reports$(ZIP_SUFFIX)
 RUBY ?= $(JRUBY)
 RUN_AUDITS ?= $(JRUBY_CMD) $(TOOLS_DIR)/run-audits-jena

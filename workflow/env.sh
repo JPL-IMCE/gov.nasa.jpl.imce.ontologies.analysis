@@ -58,6 +58,7 @@ if [ $# -gt 0 ]; then
   JENA_DATASET_NAME="$1"
 fi
 export JENA_DATASET=$JENA_DATASET_NAME
+echo "JENA_DATASET is ${JENA_DATASET}"
 
 export JENA_HOST="localhost"
 
@@ -67,6 +68,21 @@ if [ $# -gt 1 ]; then
   JENA_PORT_NUMBER="$2"
 fi
 export JENA_PORT=$JENA_PORT_NUMBER
+echo "JENA_PORT is ${JENA_PORT}"
 
 # Add as maven dependency
 export DOCBOOK_XHTML_XSL="${TOOLS}/docbook/xhtml/docbook.xsl"
+
+AUDITS_TREE_PATH=$(dirname $(pwd))/data/Audit/export/caesar-demo
+if [ $# -gt 2 ] && [ $3 != 'undefined' ]; then
+   AUDITS_TREE_PATH="$3"
+fi
+export AUDITS_TREE_PATH
+echo "AUDITS_TREE_PATH is ${AUDITS_TREE_PATH}"
+
+REPORTS_TREE_PATH=$(dirname $(pwd))/data/Report/export/caesar-demo
+if [ $# -gt 3 ] && [ $4 != 'undefined' ]; then
+    REPORTS_TREE_PATH="$4"
+fi
+export REPORTS_TREE_PATH
+echo "REPORTS_TREE_PATH is ${REPORTS_TREE_PATH}"
