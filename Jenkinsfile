@@ -127,6 +127,12 @@ pipeline {
 
                 echo "Calculating entailments and Loading the dataset to Fuseki..."
                 sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make load-production"
+
+                echo "Loading prefixes..."
+                sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; ./load-prefix.sh"
+
+                //echo "Record dataset info and mapping in Query Service database"
+                //sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; ../scripts/record-dataset-info.sh ${OML_REPO} ${OML_REPO_BRANCH}"
             }
         }
 
@@ -136,7 +142,6 @@ pipeline {
             }
             steps {
                 echo "Run audits and reports..."
-                sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; ./load-prefix.sh"
                 sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER} ${params.AUDITS_TREE_PATH} ${params.REPORTS_TREE_PATH}; /usr/bin/make run-reports"
             }
         }
