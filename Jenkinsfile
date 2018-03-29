@@ -11,7 +11,7 @@ pipeline {
         string(name: 'BOOTSTRAP_BUILDS', defaultValue: 'TRUE', description: 'Whether or not to bootstrap subsequent builds and calculate dependencies. It makes no sense to skip this step.')
         string(name: 'VALIDATE_ROOTS', defaultValue: 'TRUE', description: 'Whether or not to validate ontologies.')
         string(name: 'LOAD_PRODUCTION', defaultValue: 'TRUE', description: 'Whether or not to load data. This calculate entailments and load data to fuseki.')
-        string(name: 'RUN_REPORTS', defaultValue: 'TRUE', description: 'Whether or not to run reports.')
+        string(name: 'RUN_REPORTS', defaultValue: 'FALSE', description: 'Whether or not to run reports.')
 
         string(name: 'OML_REPO', defaultValue: 'gov.nasa.jpl.imce.caesar.workflows.europa', description: 'Repository where OML data to be converted is stored.')
         string(name: 'OML_REPO_BRANCH', defaultValue: 'user-model/generated/efse/europa', description: 'Repository branch where OML data version to be converted is stored.')
@@ -101,8 +101,8 @@ pipeline {
             steps {
                 echo "Bootstrapping builds, and location mapping..."
 
-                sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make bootstrap"
-                sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make location-mapping"
+                sh "cd workflow; source ./env.sh; /usr/bin/make bootstrap"
+                sh "cd workflow; source ./env.sh; /usr/bin/make location-mapping"
             }
         }
 
@@ -113,7 +113,7 @@ pipeline {
             steps {
                 echo "Validating ontologies roots, running consistency and satisfiability reasoner..."
 
-                sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make validate-roots"
+                sh "cd workflow; source ./env.sh; /usr/bin/make validate-roots"
             }
         }
 
