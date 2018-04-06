@@ -9,7 +9,7 @@ pipeline {
     parameters {
         /* What to perform during build */
         string(name: 'BOOTSTRAP_BUILDS_STEP', defaultValue: 'TRUE', description: 'Whether or not to bootstrap subsequent builds and calculate dependencies. It makes no sense to skip this step.')
-        string(name: 'VALIDATE_ROOTS'_STEP, defaultValue: 'TRUE', description: 'Whether or not to validate ontologies.')
+        string(name: 'VALIDATE_ROOTS_STEP', defaultValue: 'TRUE', description: 'Whether or not to validate ontologies.')
         string(name: 'LOAD_PRODUCTION_STEP', defaultValue: 'TRUE', description: 'Whether or not to load data. This calculate entailments and load data to fuseki.')
         string(name: 'RUN_REPORTS_STEP', defaultValue: 'FALSE', description: 'Whether or not to run reports.')
 
