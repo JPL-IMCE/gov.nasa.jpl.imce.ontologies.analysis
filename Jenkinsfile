@@ -8,10 +8,10 @@ pipeline {
 
     parameters {
         /* What to perform during build */
-        string(name: 'BOOTSTRAP_BUILDS', defaultValue: 'TRUE', description: 'Whether or not to bootstrap subsequent builds and calculate dependencies. It makes no sense to skip this step.')
-        string(name: 'VALIDATE_ROOTS', defaultValue: 'TRUE', description: 'Whether or not to validate ontologies.')
-        string(name: 'LOAD_PRODUCTION', defaultValue: 'TRUE', description: 'Whether or not to load data. This calculate entailments and load data to fuseki.')
-        string(name: 'RUN_REPORTS', defaultValue: 'FALSE', description: 'Whether or not to run reports.')
+        string(name: 'BOOTSTRAP_BUILDS_STEP', defaultValue: 'TRUE', description: 'Whether or not to bootstrap subsequent builds and calculate dependencies. It makes no sense to skip this step.')
+        string(name: 'VALIDATE_ROOTS'_STEP, defaultValue: 'TRUE', description: 'Whether or not to validate ontologies.')
+        string(name: 'LOAD_PRODUCTION_STEP', defaultValue: 'TRUE', description: 'Whether or not to load data. This calculate entailments and load data to fuseki.')
+        string(name: 'RUN_REPORTS_STEP', defaultValue: 'FALSE', description: 'Whether or not to run reports.')
 
         string(name: 'OML_REPO', defaultValue: 'gov.nasa.jpl.imce.caesar.workflows.europa', description: 'Repository where OML data to be converted is stored.')
         string(name: 'OML_REPO_BRANCH', defaultValue: 'user-model/generated/efse/europa', description: 'Repository branch where OML data version to be converted is stored.')
@@ -96,7 +96,7 @@ pipeline {
 
         stage('Bootstrap Builds') {
             when {
-                expression { params.BOOTSTRAP_BUILDS == 'TRUE' }
+                expression { params.BOOTSTRAP_BUILDS_STEP == 'TRUE' }
             }
             steps {
                 echo "Bootstrapping builds, and location mapping..."
@@ -108,7 +108,7 @@ pipeline {
 
         stage('Validate Roots') {
             when {
-                expression { params.VALIDATE_ROOTS == 'TRUE' }
+                expression { params.VALIDATE_ROOTS_STEP == 'TRUE' }
             }
             steps {
                 echo "Validating ontologies roots, running consistency and satisfiability reasoner..."
@@ -119,7 +119,7 @@ pipeline {
 
         stage('Load Production') {
             when {
-                expression { params.LOAD_PRODUCTION == 'TRUE' }
+                expression { params.LOAD_PRODUCTION_STEP == 'TRUE' }
             }
             steps {
                 echo "Creating Dataset on Fuseki name  ${FUSEKI_DATASET_NAME} port number ${params.FUSEKI_PORT_NUMBER}"
@@ -130,15 +130,12 @@ pipeline {
 
                 echo "Loading prefixes..."
                 sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; ./load-prefix.sh"
-
-                //echo "Record dataset info and mapping in Query Service database"
-                //sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; ../scripts/record-dataset-info.sh ${OML_REPO} ${OML_REPO_BRANCH}"
             }
         }
 
         stage("Run Reports") {
             when {
-                expression { params.RUN_REPORTS == 'TRUE' }
+                expression { params.RUN_REPORTS_STEP == 'TRUE' }
             }
             steps {
                 echo "Run audits and reports..."
