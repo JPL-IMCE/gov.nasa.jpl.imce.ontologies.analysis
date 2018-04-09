@@ -26,7 +26,6 @@ OML_IMPORT=$TOP/target/import
 PUBLIC_IMPORT=$TOP/target/import-vocabulary
 
 CATALOG=oml.catalog.xml
-#INPUT=$OML_IMPORT/$1
 INPUT=oml-input
 OUTPUT=ontologies
 
@@ -36,10 +35,7 @@ PUBLIC_BUNDLES=$PUBLIC/bundles
 
 IMCE=imce.jpl.nasa.gov
 PROJECT_BUNDLE_PATH=$IMCE/foundation/project
-#EUROPA=europa.jpl.nasa.gov
 OMG_ORG=www.omg.org
-#PURL_ORG=purl.org
-#W3_ORG=www.w3.org
 
 OMIT="
   $INPUT/$IMCE/math
@@ -65,22 +61,14 @@ mkdir $INPUT
 rsync -av $OML_IMPORT/$1/ $INPUT
 
 # omit unused vocabulary (workaround)
-rm -rf $OMIT
+#rm -rf $OMIT
 
 # remove bogus vocabulary extensions (workaround)
 
-for o in $(find $INPUT -name '*.oml')
-do
-    sed -i.bak '/extends.*owl2-mof2/d' $o
-done
-
-#echo "# Clear the destination folder & copy IMCE vocabularies to ./$PREV_REPO/resources/vocabulary/asserted/"
-#"$TOP/target/OMLConverters/bin/omlConverter" \
-#    text \
-#    -c ./gov.nasa.jpl.imce.ontologies.public/converted-oml/oml.catalog.xml \
-#    -out ./$PREV_REPO/resources/vocabulary/asserted --clear \
-#    -t \
-#    -v:files
+#for o in $(find $INPUT -name '*.oml')
+#do
+#    sed -i.bak '/extends.*owl2-mof2/d' $o
+#done
 
 echo "# converter input path: $INPUT"
 echo "# converter output path: $OUTPUT"
@@ -91,7 +79,8 @@ echo "# converter output path: $OUTPUT"
 #rsync -av $PUBLIC_ONTOLOGIES/$IMCE $PUBLIC_ONTOLOGIES/$PURL_ORG $PUBLIC_ONTOLOGIES/$W3_ORG $OUTPUT
 
 # add cached project bundle
-mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
-rsync -av --exclude='**-embedding*' $PUBLIC_BUNDLES/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH
+
+#mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
+#rsync -av --exclude='**-embedding*' $PUBLIC_BUNDLES/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH
 
 
