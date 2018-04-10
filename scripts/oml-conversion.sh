@@ -80,7 +80,7 @@ echo "# converter output path: $OUTPUT"
 
 # add cached project bundle
 
-#mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
-#rsync -av --exclude='**-embedding*' $PUBLIC_BUNDLES/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH
+mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
+rsync -av --exclude='**-embedding*' $PUBLIC_BUNDLES/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH
 
 
