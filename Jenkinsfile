@@ -15,8 +15,8 @@ pipeline {
 
         string(name: 'OML_REPO', defaultValue: 'gov.nasa.jpl.imce.caesar.workflows.europa', description: 'Repository where OML data to be converted is stored.')
         string(name: 'OML_REPO_BRANCH', defaultValue: 'user-model/generated/efse/europa', description: 'Repository branch where OML data version to be converted is stored.')
-        string(name: 'ONTOLOGY_REPO', defaultValue: 'gov.nasa.jpl.imce.ontologies.public', description: 'Repository where public ontology data is stored.')
-        string(name: 'ONTOLOGY_REPO_BRANCH', defaultValue: 'feature/IMCEIS-1715-create-temporary-branch-of-ontologie', description: 'Repository branch where public ontology data version is stored.')
+        //string(name: 'ONTOLOGY_REPO', defaultValue: 'gov.nasa.jpl.imce.ontologies.public', description: 'Repository where public ontology data is stored.')
+        //string(name: 'ONTOLOGY_REPO_BRANCH', defaultValue: 'feature/IMCEIS-1715-create-temporary-branch-of-ontologie', description: 'Repository branch where public ontology data version is stored.')
 
         string(name: 'FUSEKI_PORT_NUMBER', defaultValue: '3030', description: 'Port number of the Fuseki database.')
         string(name: 'AUDITS_TREE_PATH', defaultValue: 'undefined', description: 'Custom auditing data path.')
@@ -72,7 +72,7 @@ pipeline {
             }
         }
 
-        stage('Checkout Vocabulary') {
+        /*stage('Checkout Vocabulary') {
             when {
                 expression { params.ONTOLOGY_REPO != 'undefined' }
             }
@@ -84,13 +84,13 @@ pipeline {
                     sh "scripts/import-vocabulary.sh ${ONTOLOGY_REPO} ${ONTOLOGY_REPO_BRANCH}"
                 }
             }
-        }
+        }*/
 
         stage('OML to OWL') {            
             steps {
                 echo "Converting OML to OWL..."
 
-                sh "scripts/oml-conversion.sh ${OML_REPO}/resources ${ONTOLOGY_REPO}"
+                sh "scripts/oml-conversion.sh ${OML_REPO}"
             }
         }
 

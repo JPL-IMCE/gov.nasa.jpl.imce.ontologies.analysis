@@ -6,10 +6,12 @@ CATALOG=oml.catalog.xml
 CONVERT=$HOME/Downloads/OMLConverters/bin/omlConverter
 INPUT=oml-input
 OUTPUT=ontologies
-PUBLIC=$HOME/git/gov.nasa.jpl.imce.ontologies.public
-PUBLIC_BUNDLES=$PUBLIC/bundles
+#PUBLIC=$HOME/git/gov.nasa.jpl.imce.ontologies.public
+#PUBLIC_BUNDLES=$PUBLIC/bundles
+
 IMCE=imce.jpl.nasa.gov
 PROJECT_BUNDLE_PATH=$IMCE/foundation/project
+
 OMG_ORG=www.omg.org
 OMIT="
   $INPUT/$IMCE/math
@@ -38,21 +40,22 @@ fi
 
 rm -rf $INPUT
 mkdir $INPUT
-rsync -av $1/ $INPUT
+rsync -av $1/resources $INPUT
+rsync -av $1/bundles $INPUT
 
 # omit unused vocabulary
-rm -rf $OMIT
+#rm -rf $OMIT
 
 # remove bogus vocabulary extensions
 
-for o in $(find $INPUT -name '*.oml')
-do
-    sed -i.bak '/extends.*owl2-mof2/d' $o
-done
+#for o in $(find $INPUT -name '*.oml')
+#do
+#    sed -i.bak '/extends.*owl2-mof2/d' $o
+#done
 
 # convert OML to owl
 
-$CONVERT text $INPUT/$CATALOG -v:files --output $OUTPUT --owl --clear
+$CONVERT text $INPUT/resources/$CATALOG -v:files --output $OUTPUT --owl --clear
 
 # overwrite vocabulary with latest OWL files
 
@@ -60,6 +63,7 @@ $CONVERT text $INPUT/$CATALOG -v:files --output $OUTPUT --owl --clear
 
 # add cached project bundle
 
-mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
-rsync -av --exclude='**-embedding*' $PUBLIC_BUNDLES/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH
+#mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
+#rsync -av --exclude='**-embedding*' $PUBLIC_BUNDLES/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH
+rsync -av --exclude='**-embedding*' $INPUT/bundles/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH
 
