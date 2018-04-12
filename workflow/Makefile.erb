@@ -420,7 +420,7 @@ define do_entailments
   @echo entail '->' $@
   @mkdir -p $(dir $@)
   $(ENTAIL) $(ENTAIL_OPTS) \
-  	     $$(test $$(grep '<failure' $(VALIDATE_ROOTS_TEST_FILE) | wc -l) -gt 0 && echo '--vacuous')) \
+  	     $$(test $$(grep '<failure' $(VALIDATE_ROOTS_TEST_FILE) | wc -l) -gt 0 && echo '--vacuous') \
   	     --input-iri $(1) --output-iri $(2) --types $(3) $(4) $^ > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
