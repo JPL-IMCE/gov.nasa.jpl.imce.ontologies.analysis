@@ -8,7 +8,9 @@ INPUT=oml-input
 OUTPUT=ontologies
 
 IMCE=imce.jpl.nasa.gov
-PROJECT_BUNDLE_PATH=$IMCE/foundation/project
+OMG_ORG=www.omg.org
+
+PUBLIC_BUNDLES="$1/bundles"
 
 # run in analysis target/workflow/artifacts
 
@@ -23,7 +25,6 @@ fi
 rm -rf $INPUT
 mkdir $INPUT
 rsync -av $1/resources $INPUT
-rsync -av $1/bundles $INPUT
 
 # convert OML to owl
 
@@ -32,5 +33,5 @@ $CONVERT text $INPUT/resources/$CATALOG -v:files --output $OUTPUT --owl --clear
 # add cached project bundle
 
 #mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
-rsync -av --exclude='**-embedding*' $INPUT/bundles/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH
+rsync -av --exclude='**'$OMG_ORG'**' --exclude='**-embedding*' $PUBLIC_BUNDLES/ $OUTPUT/
 
