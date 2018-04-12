@@ -3,6 +3,7 @@
 
 ### Prerequisites
   * Input model is checked out from a repo
+  * A Fuseki server is setup locally
 
 ### Run Manually
 To run, execute the following commands in a terminal, starting at the project root:
