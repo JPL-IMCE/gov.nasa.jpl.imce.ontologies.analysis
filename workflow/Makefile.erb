@@ -11,7 +11,6 @@
 
 ARTIFACTS_DIR ?= <%= ARTIFACTS_DIR = 'artifacts' %>
 AUDITS_DIR ?= tests/audits
-## AUDITS_TREE ?= ../../data/Audit/export/caesar-demo
 AUDITS_TREE ?= $(AUDITS_TREE_PATH)
 AUDITS_TEST_FILE ?= $(AUDITS_DIR)/run-audits$(XML_SUFFIX)
 
@@ -67,13 +66,11 @@ LOCATION_MAPPING_FILE ?= location-mapping.yaml
 
 MAKE_MAKEFILE ?= $(TOOLS_DIR)/make-makefile
 
+OMG_ORG ?= <%= OMG_ORG = 'www.omg.org' %>
 ONTOLOGIES_DIR ?= <%= ONTOLOGIES_DIR = "#{ARTIFACTS_DIR}/ontologies" %>
 OWL_SUFFIX = .owl
 
-VOCABULARY_BUNDLE_IRI ?= <%= VOCABULARY_BUNDLE_IRI = 'http://imce.jpl.nasa.gov/discipline/fse/fse-bundle' %>
-
 REPORTS_DIR ?= $(ARTIFACTS_DIR)/reports
-## REPORTS_TREE ?= ../../data/Report/export/caesar-demo
 REPORTS_TREE ?= $(REPORTS_TREE_PATH)
 REPORTS_TEST_FILE ?= $(REPORTS_DIR)/run-reports$(ZIP_SUFFIX)
 RUBY ?= $(JRUBY)
@@ -105,6 +102,8 @@ VALIDATE_ROOTS_TEST_FILE ?= $(TESTS_DIR)/validate-roots$(XML_SUFFIX)
 VALIDATE_ROOTS_ID ?= validate-roots
 
 VIEW_STEM ?= imce.jpl.nasa.gov/view/
+
+VOCABULARY_BUNDLE_IRI ?= <%= VOCABULARY_BUNDLE_IRI = 'http://imce.jpl.nasa.gov/discipline/fse/fse-bundle' %>
 
 XML_SUFFIX ?= .xml
 
@@ -207,7 +206,9 @@ tmpfile = $(dir $1).$(notdir $1)
   metadata = Hash.new { |h, k| h[k] = [] }
   FileUtils.cd(ONTOLOGIES_DIR) do
     Find.find('.') do |path|
+      Find.prune if File.basename(path) =~ OMG_ORG
       next unless File.file?(path) && File.basename(path) =~ /\.owl\z/
+      next if File.basename(path) =~ /-embedding\.owl/
 
       iports = nil
       File.open(path) do |f|
