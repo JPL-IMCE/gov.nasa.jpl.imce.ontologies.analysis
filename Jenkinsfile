@@ -11,7 +11,7 @@ pipeline {
         string(name: 'BOOTSTRAP_BUILDS_STEP', defaultValue: 'TRUE', description: 'Whether or not to bootstrap subsequent builds and calculate dependencies. It makes no sense to skip this step.')
         string(name: 'VALIDATE_ROOTS_STEP', defaultValue: 'TRUE', description: 'Whether or not to validate ontologies.')
         string(name: 'LOAD_PRODUCTION_STEP', defaultValue: 'TRUE', description: 'Whether or not to load data. This calculate entailments and load data to fuseki.')
-        string(name: 'RUN_REPORTS_STEP', defaultValue: 'FALSE', description: 'Whether or not to run reports.')
+        string(name: 'RUN_REPORTS_STEP', defaultValue: 'TRUE', description: 'Whether or not to run reports.')
 
         string(name: 'OML_REPO', defaultValue: 'gov.nasa.jpl.imce.caesar.workflows.europa', description: 'Repository where OML data to be converted is stored.')
         string(name: 'OML_REPO_BRANCH', defaultValue: 'user-model/generated/efse/europa', description: 'Repository branch where OML data version to be converted is stored.')
@@ -133,12 +133,13 @@ pipeline {
             }
         }
 
-        stage("Run Reports") {
+        stage("Run Audits and Reports") {
             when {
                 expression { params.RUN_REPORTS_STEP == 'TRUE' }
             }
             steps {
                 echo "Run audits and reports..."
+                sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER} ${params.AUDITS_TREE_PATH} ${params.REPORTS_TREE_PATH}; /usr/bin/make run-audits"
                 sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER} ${params.AUDITS_TREE_PATH} ${params.REPORTS_TREE_PATH}; /usr/bin/make run-reports"
             }
         }
