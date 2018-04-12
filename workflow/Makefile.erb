@@ -206,7 +206,7 @@ tmpfile = $(dir $1).$(notdir $1)
   metadata = Hash.new { |h, k| h[k] = [] }
   FileUtils.cd(ONTOLOGIES_DIR) do
     Find.find('.') do |path|
-      Find.prune if File.basename(path) =~ OMG_ORG
+      Find.prune if File.basename(path) =~ Regexp.new(OMG_ORG)
       next unless File.file?(path) && File.basename(path) =~ /\.owl\z/
       next if File.basename(path) =~ /-embedding\.owl/
 
