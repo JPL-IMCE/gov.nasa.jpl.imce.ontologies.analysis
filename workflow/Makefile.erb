@@ -29,7 +29,7 @@ CLOSE_BUNDLE_IRI_FILE ?= <%= CLOSE_BUNDLE_IRI_FILE = "#{ARTIFACTS_DIR}/close_bun
 DEPENDENCIES_FILE ?= .dependencies
 
 ENTAIL ?= $(JRUBY_CMD) $(TOOLS_DIR)/entail
-ENTAIL_OPTS = --vacuous
+ENTAIL_OPTS = 
 
 EMPTY_IMPORTS_FILE ?= empty-imports.yaml
 
@@ -70,7 +70,7 @@ MAKE_MAKEFILE ?= $(TOOLS_DIR)/make-makefile
 ONTOLOGIES_DIR ?= <%= ONTOLOGIES_DIR = "#{ARTIFACTS_DIR}/ontologies" %>
 OWL_SUFFIX = .owl
 
-PROJECT_BUNDLE_IRI ?= <%= PROJECT_BUNDLE_IRI = 'http://imce.jpl.nasa.gov/foundation/project/project-bundle' %>
+VOCABULARY_BUNDLE_IRI ?= <%= VOCABULARY_BUNDLE_IRI = 'http://imce.jpl.nasa.gov/discipline/fse/fse-bundle' %>
 
 REPORTS_DIR ?= $(ARTIFACTS_DIR)/reports
 ## REPORTS_TREE ?= ../../data/Report/export/caesar-demo
@@ -336,9 +336,10 @@ tmpfile = $(dir $1).$(notdir $1)
   iris = root_nodes.map { |o| o.ontology_iri }
   files = root_nodes.map { |o| o.ontology_file }
   
-  project_bundle_graph = graphs[PROJECT_BUNDLE_IRI]
-  iris << project_bundle_graph.ontology_iri
-  files << project_bundle_graph.ontology_file
+  vocabulary_bundle_graph = graphs[VOCABULARY_BUNDLE_IRI]
+  raise "no graph for #{VOCABULARY_BUNDLE_IRI}" unless vocabulary_bundle_graph
+  iris << vocabulary_bundle_graph.ontology_iri
+  files << vocabulary_bundle_graph.ontology_file
 
   File.open(CLOSE_BUNDLE_IRI_FILE, 'w') { |f| f.write(iris.join("\n")) }
   
@@ -417,7 +418,9 @@ validate-roots:	$(VALIDATE_ROOTS_TEST_FILE)
 define do_entailments
   @echo entail '->' $@
   @mkdir -p $(dir $@)
-  @$(ENTAIL) $(ENTAIL_OPTS) --input-iri $(1) --output-iri $(2) --types $(3) $(4) $^ > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  $(ENTAIL) $(ENTAIL_OPTS) \
+  	     $$(test $$(grep '<failure' $(VALIDATE_ROOTS_TEST_FILE) | wc -l) -gt 0 && echo '--vacuous')) \
+  	     --input-iri $(1) --output-iri $(2) --types $(3) $(4) $^ > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 <%= entailments_rules.map { |r| r.to_s }.join("\n") %>

@@ -34,7 +34,6 @@ PUBLIC_ONTOLOGIES=$PUBLIC/ontologies
 PUBLIC_BUNDLES=$PUBLIC/bundles
 
 IMCE=imce.jpl.nasa.gov
-PROJECT_BUNDLE_PATH=$IMCE/foundation/project
 OMG_ORG=www.omg.org
 
 OMIT="
@@ -80,7 +79,6 @@ echo "# converter output path: $OUTPUT"
 
 # add cached project bundle
 
-mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
-rsync -av --exclude='**-embedding*' $PUBLIC_BUNDLES/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH
+rsync -av --exclude='**www.omg.org**' --exclude='**-embedding*' $PUBLIC_BUNDLES/ $OUTPUT/
 
 
