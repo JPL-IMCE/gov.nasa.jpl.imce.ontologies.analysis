@@ -6,25 +6,9 @@ CATALOG=oml.catalog.xml
 CONVERT=$HOME/Downloads/OMLConverters/bin/omlConverter
 INPUT=oml-input
 OUTPUT=ontologies
-PUBLIC=$HOME/git/gov.nasa.jpl.imce.ontologies.public
-PUBLIC_BUNDLES=$PUBLIC/bundles
+
 IMCE=imce.jpl.nasa.gov
 PROJECT_BUNDLE_PATH=$IMCE/foundation/project
-OMG_ORG=www.omg.org
-OMIT="
-  $INPUT/$IMCE/math
-  $INPUT/$IMCE/skeleton
-  $INPUT/$IMCE/discipline/mechanical
-  $INPUT/$IMCE/discipline/ontological-behavior
-  $INPUT/$IMCE/discipline/risk
-  $INPUT/$IMCE/discipline/state-analysis
-  $INPUT/$IMCE/foundation/owl2-mof2
-  $INPUT/$IMCE/foundation/time
-  $INPUT/$IMCE/oml/provenance
-  $INPUT/$IMCE/$OMG_ORG
-  $INPUT/$IMCE/*/*/*-embedding.oml
-  $INPUT/$IMCE/vocabulary
-"
 
 # run in analysis target/workflow/artifacts
 
@@ -38,28 +22,15 @@ fi
 
 rm -rf $INPUT
 mkdir $INPUT
-rsync -av $1/ $INPUT
-
-# omit unused vocabulary
-rm -rf $OMIT
-
-# remove bogus vocabulary extensions
-
-for o in $(find $INPUT -name '*.oml')
-do
-    sed -i.bak '/extends.*owl2-mof2/d' $o
-done
+rsync -av $1/resources $INPUT
+rsync -av $1/bundles $INPUT
 
 # convert OML to owl
 
-$CONVERT text $INPUT/$CATALOG -v:files --output $OUTPUT --owl --clear
-
-# overwrite vocabulary with latest OWL files
-
-#rsync -av $PUBLIC_ONTOLOGIES/$IMCE $PUBLIC_ONTOLOGIES/$PURL_ORG $PUBLIC_ONTOLOGIES/$W3_ORG $OUTPUT
+$CONVERT text $INPUT/resources/$CATALOG -v:files --output $OUTPUT --owl --clear
 
 # add cached project bundle
 
-mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
-rsync -av --exclude='**-embedding*' $PUBLIC_BUNDLES/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH
+#mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
+rsync -av --exclude='**-embedding*' $INPUT/bundles/$PROJECT_BUNDLE_PATH/ $OUTPUT/$PROJECT_BUNDLE_PATH
 

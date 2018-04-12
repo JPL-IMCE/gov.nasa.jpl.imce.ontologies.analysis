@@ -23,33 +23,13 @@ HERE="$(pwd)"
 CONVERTER_INFO="$($TOP/target/OMLConverters/bin/omlConverter --version)"
 
 OML_IMPORT=$TOP/target/import
-PUBLIC_IMPORT=$TOP/target/import-vocabulary
 
 CATALOG=oml.catalog.xml
 INPUT=oml-input
 OUTPUT=ontologies
 
-PUBLIC=$PUBLIC_IMPORT/$2
-PUBLIC_ONTOLOGIES=$PUBLIC/ontologies
-PUBLIC_BUNDLES=$PUBLIC/bundles
-
 IMCE=imce.jpl.nasa.gov
 OMG_ORG=www.omg.org
-
-OMIT="
-  $INPUT/$IMCE/math
-  $INPUT/$IMCE/skeleton
-  $INPUT/$IMCE/discipline/mechanical
-  $INPUT/$IMCE/discipline/ontological-behavior
-  $INPUT/$IMCE/discipline/risk
-  $INPUT/$IMCE/discipline/state-analysis
-  $INPUT/$IMCE/foundation/owl2-mof2
-  $INPUT/$IMCE/foundation/time
-  $INPUT/$IMCE/oml/provenance
-  $INPUT/$IMCE/$OMG_ORG
-  $INPUT/$IMCE/*/*/*-embedding.oml
-  $INPUT/$IMCE/vocabulary
-"
 
 echo "# current path: $(pwd)"
 
@@ -57,28 +37,15 @@ echo "# current path: $(pwd)"
 
 rm -rf $INPUT
 mkdir $INPUT
-rsync -av $OML_IMPORT/$1/ $INPUT
-
-# omit unused vocabulary (workaround)
-#rm -rf $OMIT
-
-# remove bogus vocabulary extensions (workaround)
-
-#for o in $(find $INPUT -name '*.oml')
-#do
-#    sed -i.bak '/extends.*owl2-mof2/d' $o
-#done
+rsync -av $OML_IMPORT/$1/resources $INPUT
+rsync -av $OML_IMPORT/$1/bundles $INPUT
 
 echo "# converter input path: $INPUT"
 echo "# converter output path: $OUTPUT"
 
-"$TOP/target/OMLConverters/bin/omlConverter" text $INPUT/$CATALOG --output $OUTPUT --owl --clear
-
-# overwrite vocabulary with latest OWL files
-#rsync -av $PUBLIC_ONTOLOGIES/$IMCE $PUBLIC_ONTOLOGIES/$PURL_ORG $PUBLIC_ONTOLOGIES/$W3_ORG $OUTPUT
+"$TOP/target/OMLConverters/bin/omlConverter" text $INPUT/resources/$CATALOG --output $OUTPUT --owl --clear
 
 # add cached project bundle
 
-rsync -av --exclude='**www.omg.org**' --exclude='**-embedding*' $PUBLIC_BUNDLES/ $OUTPUT/
-
+rsync -av --exclude='**'$OMG_ORG'**' --exclude='**-embedding*' $PUBLIC_BUNDLES/ $OUTPUT/
 
