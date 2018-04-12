@@ -31,6 +31,8 @@ OUTPUT=ontologies
 IMCE=imce.jpl.nasa.gov
 OMG_ORG=www.omg.org
 
+PUBLIC_BUNDLES="$1/bundles"
+
 echo "# current path: $(pwd)"
 
 # copy exported function list data
@@ -38,7 +40,6 @@ echo "# current path: $(pwd)"
 rm -rf $INPUT
 mkdir $INPUT
 rsync -av $OML_IMPORT/$1/resources $INPUT
-rsync -av $OML_IMPORT/$1/bundles $INPUT
 
 echo "# converter input path: $INPUT"
 echo "# converter output path: $OUTPUT"
