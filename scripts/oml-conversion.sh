@@ -48,7 +48,7 @@ rsync -av $OML_IMPORT_RESOURCES $INPUT
 echo "# converter input path: $INPUT"
 echo "# converter output path: $OUTPUT"
 
-"$TOP/target/OMLConverters/bin/omlConverter" text $INPUT/$CATALOG --output $OUTPUT --owl --clear
+"$TOP/target/OMLConverters/bin/omlConverter" text $INPUT/resources/$CATALOG --output $OUTPUT --owl --clear
 
 # add cached project bundle
 
