@@ -21,6 +21,7 @@ source env.sh <dataset_name> 3030
 make bootstrap
 make location-mapping
 make validate-roots
+make identify-unsat-roots
 ../scripts/create-dataset.sh
 make load-production
 ./load-prefix.sh
