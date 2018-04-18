@@ -98,6 +98,7 @@ pipeline {
                 echo "Validating ontologies roots, running consistency and satisfiability reasoner..."
 
                 sh "cd workflow; source ./env.sh; /usr/bin/make validate-roots"
+                sh "cd workflow; source ./env.sh; /usr/bin/make identify-unsat-roots"
             }
         }
 
