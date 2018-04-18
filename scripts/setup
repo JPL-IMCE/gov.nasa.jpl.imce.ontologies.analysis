@@ -2,6 +2,8 @@
 
 set -o errexit
 
+OML_IMPORT=$1
+
 CATALOG=oml.catalog.xml
 CONVERT=$HOME/Downloads/OMLConverters/bin/omlConverter
 INPUT=oml-input
@@ -10,7 +12,8 @@ OUTPUT=ontologies
 IMCE=imce.jpl.nasa.gov
 OMG_ORG=www.omg.org
 
-PUBLIC_BUNDLES="$1/bundles"
+OML_IMPORT_RESOURCES=$OML_IMPORT/resources
+PUBLIC_BUNDLES=$OML_IMPORT/bundles
 
 # run in analysis target/workflow/artifacts
 
@@ -20,18 +23,21 @@ then
   exit 1
 fi
 
+echo "# oml import resources: $OML_IMPORT_RESOURCES"
+echo "# public bundles: $PUBLIC_BUNDLES"
+
 # copy exported function list data
 
 rm -rf $INPUT
 mkdir $INPUT
-rsync -av $1/resources $INPUT
+rsync -av $OML_IMPORT_RESOURCES $INPUT
 
 # convert OML to owl
 
-$CONVERT text $INPUT/resources/$CATALOG -v:files --output $OUTPUT --owl --clear
+$CONVERT --version
+$CONVERT text $INPUT/resources/$CATALOG --output $OUTPUT --owl --clear
 
 # add cached project bundle
 
-#mkdir -p $OUTPUT/$PROJECT_BUNDLE_PATH
 rsync -av --exclude='**'$OMG_ORG'**' --exclude='**-embedding*' $PUBLIC_BUNDLES/ $OUTPUT/
 
