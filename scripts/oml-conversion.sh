@@ -22,7 +22,7 @@ HERE="$(pwd)"
 
 CONVERTER_INFO="$($TOP/target/OMLConverters/bin/omlConverter --version)"
 
-OML_IMPORT=$TOP/target/import
+OML_IMPORT=$TOP/target/import/$1
 
 CATALOG=oml.catalog.xml
 INPUT=oml-input
@@ -31,13 +31,12 @@ OUTPUT=ontologies
 IMCE=imce.jpl.nasa.gov
 OMG_ORG=www.omg.org
 
-OML_IMPORT_RESOURCES=$OML_IMPORT/$1/resources
-PUBLIC_BUNDLES=$OML_IMPORT/$1/bundles
+OML_IMPORT_RESOURCES=$OML_IMPORT/resources
+PUBLIC_BUNDLES=$OML_IMPORT/bundles
 
 echo "# current path: $(pwd)"
 echo "# oml import resources: $OML_IMPORT_RESOURCES"
 echo "# public bundles: $PUBLIC_BUNDLES"
-
 
 # copy exported function list data
 
@@ -45,8 +44,7 @@ rm -rf $INPUT
 mkdir $INPUT
 rsync -av $OML_IMPORT_RESOURCES $INPUT
 
-echo "# converter input path: $INPUT"
-echo "# converter output path: $OUTPUT"
+# convert OML to owl
 
 "$TOP/target/OMLConverters/bin/omlConverter" text $INPUT/resources/$CATALOG --output $OUTPUT --owl --clear
 
