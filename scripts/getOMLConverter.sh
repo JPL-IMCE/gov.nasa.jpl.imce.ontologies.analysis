@@ -10,7 +10,7 @@ echo $TOP
 mkdir -p $TOP/target
 cd $TOP/target
 
-VERSION="0.10.9"
+VERSION="0.10.10"
 URL="https://bintray.com/jpl-imce/gov.nasa.jpl.imce/download_file?file_path=gov%2Fnasa%2Fjpl%2Fimce%2Fgov.nasa.jpl.imce.oml.converters%2F$VERSION%2Fgov.nasa.jpl.imce.oml.converters-$VERSION.tgz"
 if ! test -f omlConverter.tgz; then
     echo "# Downloading OML Converter..."
