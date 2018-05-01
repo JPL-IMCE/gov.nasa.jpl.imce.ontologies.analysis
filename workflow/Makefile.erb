@@ -22,13 +22,13 @@ BUNDLE_CLOSURE_PROJECT ?= europa
 BUNDLE_CLOSURE_STEM ?= export-bundle
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
-CLOSE_BUNDLE_OPTS ?= --info --export --iri-file $(CLOSE_BUNDLE_IRI_FILE)
+CLOSE_BUNDLE_OPTS ?= --export --iri-file $(CLOSE_BUNDLE_IRI_FILE) --remove-backbone
 CLOSE_BUNDLE_IRI_FILE ?= <%= CLOSE_BUNDLE_IRI_FILE = "#{ARTIFACTS_DIR}/close_bundle_iris" %>
 
 DEPENDENCIES_FILE ?= .dependencies
 
 ENTAIL ?= $(JRUBY_CMD) $(TOOLS_DIR)/entail
-ENTAIL_OPTS = 
+ENTAIL_OPTS = --remove-backbone
 
 EMPTY_IMPORTS_FILE ?= empty-imports.yaml
 
@@ -419,7 +419,7 @@ validate-roots:	$(VALIDATE_ROOTS_TEST_FILE)
 define do_entailments
   @echo entail '->' $@
   @mkdir -p $(dir $@)
-  $(ENTAIL) $(ENTAIL_OPTS) \
+  @$(ENTAIL) $(ENTAIL_OPTS) \
   	     $$(test $$(grep '<failure' $(VALIDATE_ROOTS_TEST_FILE) | wc -l) -gt 0 && echo '--vacuous') \
   	     --input-iri $(1) --output-iri $(2) --types $(3) $(4) $^ > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
