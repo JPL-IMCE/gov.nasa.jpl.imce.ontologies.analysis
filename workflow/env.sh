@@ -7,7 +7,7 @@ export ETC=$(dirname $(pwd))/etc
 export WORKFLOW_SOURCES=$(dirname $(pwd))/workflow
 
 # Read-only
-export ONTOLOGIES=$(dirname $(pwd))/target/ontologies
+export ONTOLOGIES=$(dirname $(pwd))/target/inputs/model
 
 # Read-only
 FUSEKI_PROJ="$(dirname $(dirname "$(pwd)"))/gov.nasa.jpl.imce.ontologies.fuseki"
