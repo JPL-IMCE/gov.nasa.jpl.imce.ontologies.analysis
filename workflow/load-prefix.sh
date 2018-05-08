@@ -7,6 +7,6 @@
 curl -v \
     -X PUT \
     -H "Content-Type: text/turtle" \
-    -G '$(FUSEKI_ENDPOINT)/$(JENA_DATASET)/data' \
+    -G '${FUSEKI_ENDPOINT}/${JENA_DATASET}/data' \
     --data-urlencode graph='default' \
     -T 'prefix-imports.ttl'
