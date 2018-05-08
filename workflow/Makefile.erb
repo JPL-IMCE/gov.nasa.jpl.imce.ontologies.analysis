@@ -438,7 +438,7 @@ endef
 define do_load
   @echo load $(2) '->' $(1)
   @mkdir -p $(dir $@)
-  @curl -v \
+  curl -v \
     -X PUT \
     -H "Content-Type: application/rdf+xml" \
     -G '$(FUSEKI_ENDPOINT)/$(JENA_DATASET)/data' \
