@@ -442,7 +442,7 @@ define do_load
     -X PUT \
     -H "Content-Type: application/rdf+xml" \
     -G '$(FUSEKI_ENDPOINT)/$(JENA_DATASET)/data' \
-    --data-urlencode '$(1)' \
+    --data-urlencode graph='$(1)' \
     -T '$(2)' && touch $@
 endef
 
