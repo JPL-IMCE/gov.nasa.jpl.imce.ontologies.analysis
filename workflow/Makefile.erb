@@ -431,11 +431,19 @@ endef
 # load-production
 #
 
-
+#
+# FUSEKI_ENDPOINT must be the URL of the Fuseki repository endpoint.
+# http://[host]:[port] or https://[host]:[port]
+#
 define do_load
   @echo load $(2) '->' $(1)
   @mkdir -p $(dir $@)
-  @$(RUBY) $(FUSEKI_S_PUT) 'http://$(JENA_HOST):$(JENA_PORT)/$(JENA_DATASET)/data' '$(1)' '$(2)' && touch $@
+  @curl -v \
+    -X PUT \
+    -H "Content-Type: application/rdf+xml" \
+    -G '$(FUSEKI_ENDPOINT)/$(JENA_DATASET)/data' \
+    --data-urlencode '$(1)' \
+    -T '$(2)' && touch $@
 endef
 
 load-production:	load-ontologies-production
