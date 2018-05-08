@@ -1,7 +1,12 @@
 #!/bin/bash
 
 ## load prefixes for running reports
-[ -z "$FUSEKI_BIN" ] && echo "FUSEKI_BIN environment not set!"
+[ -z "$FUSEKI_ENDPOINT" ] && echo "FUSEKI_ENDPOINT environment not set!"
+[ -z "$JENA_DATASET" ] && echo "JENA_DATASET environment not set!"
 
-FUSEKI_S_PUT=${FUSEKI_BIN}/s-put
-$FUSEKI_S_PUT 'http://'${JENA_HOST}':'${JENA_PORT}'/'${JENA_DATASET}'/data' 'default' 'prefix-imports.ttl'
+curl -v \
+    -X PUT \
+    -H "Content-Type: text/turtle" \
+    -G '$(FUSEKI_ENDPOINT)/$(JENA_DATASET)/data' \
+    --data-urlencode graph='default' \
+    -T 'prefix-imports.ttl'
