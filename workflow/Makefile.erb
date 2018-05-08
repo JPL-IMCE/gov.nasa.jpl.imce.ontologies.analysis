@@ -135,22 +135,22 @@ tmpfile = $(dir $1).$(notdir $1)
     end
     attr_reader :open
     def ontology_file
-      "#{ENV['PWD']}/#{@o_dir}/#{@stem}$(OWL_SUFFIX)"
+      "#{@o_dir}/#{@stem}$(OWL_SUFFIX)"
     end
     def ontology_file_iri
       'file://' + ontology_file
     end
     def entailments_file(type)
-      "#{ENV['PWD']}/$(ENTAILMENTS_DIR)/#{@stem}/#{type}$(OWL_SUFFIX)"
+      "$(ENTAILMENTS_DIR)/#{@stem}/#{type}$(OWL_SUFFIX)"
     end
     def entailments_file_iri(type)
       'file://' + entailments_file(type)
     end
     def ontology_sentinel
-      "#{ENV['PWD']}/$(SENTINELS_DIR)/#{@stem}$(OWL_SUFFIX)"
+      "$(SENTINELS_DIR)/#{@stem}$(OWL_SUFFIX)"
     end
     def entailments_sentinel(type)
-      "#{ENV['PWD']}/$(SENTINELS_DIR)/#{@stem}/#{type}$(OWL_SUFFIX)"
+      "$(SENTINELS_DIR)/#{@stem}/#{type}$(OWL_SUFFIX)"
     end
   end
   class OMFOntologyGraph < OMFGraph
