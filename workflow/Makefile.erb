@@ -85,7 +85,7 @@ RUN_REPORTS_IRI_FILE ?= <%= RUN_REPORTS_IRI_FILE = ENV['RUN_REPORTS_IRI_FILE'] |
 SENTINELS_DIR ?= $(ARTIFACTS_DIR)/.sentinels
 
 TESTS_DIR ?= tests/consistency
-TOOLS_DIR ?= ../tools/tools
+TOOLS_DIR ?= $(TOOLS)/tools
 
 UNSATS_REPORT_FILE ?= tests/consistency/unsats.csv
 UNSAT_PROPS_REPORT_FILE ?= tests/consistency/unsat-props.csv
