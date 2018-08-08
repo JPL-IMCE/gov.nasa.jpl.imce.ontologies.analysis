@@ -84,17 +84,17 @@ RUN_REPORTS_IRI_FILE ?= <%= RUN_REPORTS_IRI_FILE = ENV['RUN_REPORTS_IRI_FILE'] |
 
 SENTINELS_DIR ?= $(ARTIFACTS_DIR)/.sentinels
 
-TESTS_DIR ?= tests/consistency
+TESTS_DIR ?= $(ARTIFACTS_DIR)/tests/consistency
 TOOLS_DIR ?= $(TOOLS)/tools
 
-UNSATS_REPORT_FILE ?= tests/consistency/unsats.csv
-UNSAT_PROPS_REPORT_FILE ?= tests/consistency/unsat-props.csv
-UNSAT_PROP_SOURCES_REPORT_FILE ?= tests/consistency/unsat-prop-sources.csv
-UNSAT_PROP_TARGETS_REPORT_FILE ?= tests/consistency/unsat-prop-targets.csv
-UNSAT_SUPS_REPORT_FILE ?= tests/consistency/unsat-sups.csv
-UNSAT_FUNC_PROPS_REPORT_FILE = tests/consistency/unsat-func-props.csv
+UNSATS_REPORT_FILE ?= $(TESTS_DIR)/unsats.csv
+UNSAT_PROPS_REPORT_FILE ?= $(TESTS_DIR)/unsat-props.csv
+UNSAT_PROP_SOURCES_REPORT_FILE ?= $(TESTS_DIR)/unsat-prop-sources.csv
+UNSAT_PROP_TARGETS_REPORT_FILE ?= $(TESTS_DIR)/unsat-prop-targets.csv
+UNSAT_SUPS_REPORT_FILE ?= $(TESTS_DIR)/unsat-sups.csv
+UNSAT_FUNC_PROPS_REPORT_FILE = $(TESTS_DIR)/unsat-func-props.csv
 
-UNSAT_ROOTS_REPORT_FILE = tests/consistency/unsat-roots.csv
+UNSAT_ROOTS_REPORT_FILE = $(TESTS_DIR)/unsat-roots.csv
 
 VALIDATE_OWL ?= $(JRUBY_CMD) -J-Djava.util.logging.config.file=logging.properties $(TOOLS_DIR)/validate-owl
 VALIDATE_OWL_OPTS ?= --debug --satisfiability
