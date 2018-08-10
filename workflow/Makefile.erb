@@ -34,6 +34,10 @@ EMPTY_IMPORTS_FILE ?= empty-imports.yaml
 
 ENTAILMENTS_DIR ?= $(ARTIFACTS_DIR)/entailments
 
+                                                         # { path_to_scan1 => [ path_to_prune1, path_to_prune2, ... ], path_to_scan2 => [ ... ], ... }
+<% EXPORTED_VOCABULARIES = ENV['EXPORTED_VOCABULARIES'] || { 'europa.jpl.nasa.gov/efse/libraries' => [] } %>
+<% EXPORTED_USER_MODELS = ENV['EXPORTED_USER_MODELS'] || { 'europa.jpl.nasa.gov' => [ 'europa.jpl.nasa.gov/efse/libraries' ] } %>
+
 EXTRACT ?= $(JRUBY_CMD) $(TOOLS_DIR)/extract-ontology
 EXTRACT_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
 
@@ -51,6 +55,8 @@ GET_UNSAT_IRIS_OPTS ?=
 
 GET_UNSAT_ROOTS ?= $(TOOLS_DIR)/get-unsat-roots
 GET_UNSAT_ROOTS_OPTS ?= --info
+
+<% IMPORTED_VOCABULARIES = ENV['IMPORTED_VOCABULARIES'] || { 'imce.jpl.nasa.gov' => [] } %>
 
 IRI_TO_MDID ?= $(TOOLS_DIR)/iri-to-mdid
 IRI_TO_MDID_OPTS ?=
@@ -202,8 +208,29 @@ tmpfile = $(dir $1).$(notdir $1)
 	'PropertyEntailments' => %w{ InverseProperty AllSubproperty }
   }
 
+  PATHS = {
+  	'exported_vocabularies' => EXPORTED_VOCABULARIES,
+	'exported_user_models' => EXPORTED_USER_MODELS,
+	'imported_vocabularies' => IMPORTED_VOCABULARIES,
+  }
+	
   # Traverse ontologies and mine metadata.
 
+  ontologies = {}
+  seen = []
+  FileUtils.cd(ONTOLOGIES_DIR) do
+    PATHS.each do |group, path_hash|
+      path_hash.each do |search_path, prune_list|
+        Find.find(search_path) do |fp|
+	  Find.prune if prune_list.include?(fp)
+	  next unless File.file?(fp) && File.basename(fp) =~ /\.owl/
+	  warn "#{group} #{fp}"
+        end
+      end
+    end
+  end
+  raise "made it"
+  
   metadata = Hash.new { |h, k| h[k] = [] }
   FileUtils.cd(ONTOLOGIES_DIR) do
     Find.find('.') do |path|
