@@ -18,7 +18,6 @@ BACKBONE_DISJOINTS ?= Entity ReifiedObjectProperty ReifiedStructuredDataProperty
 BACKBONE_PREFIX ?= http://imce.jpl.nasa.gov/backbone
 
 BUNDLES_DIR ?= $(ARTIFACTS_DIR)/bundles
-BUNDLE_CLOSURE_PROJECT ?= europa
 BUNDLE_CLOSURE_STEM ?= export-bundle
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
@@ -36,7 +35,9 @@ ENTAILMENTS_DIR ?= $(ARTIFACTS_DIR)/entailments
 
                                                          # { path_to_scan1 => [ path_to_prune1, path_to_prune2, ... ], path_to_scan2 => [ ... ], ... }
 <% EXPORTED_VOCABULARIES = ENV['EXPORTED_VOCABULARIES'] || { 'europa.jpl.nasa.gov/efse/libraries' => [] } %>
+EXPORTED_VOCABULARIES_BUNDLE_STEM ?= exported-vocabularies
 <% EXPORTED_USER_MODELS = ENV['EXPORTED_USER_MODELS'] || { 'europa.jpl.nasa.gov' => [ 'europa.jpl.nasa.gov/efse/libraries' ] } %>
+EXPORTED_USER_MODELS_BUNDLE_STEM ?= exported-user-models
 
 EXTRACT ?= $(JRUBY_CMD) $(TOOLS_DIR)/extract-ontology
 EXTRACT_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
@@ -56,7 +57,8 @@ GET_UNSAT_IRIS_OPTS ?=
 GET_UNSAT_ROOTS ?= $(TOOLS_DIR)/get-unsat-roots
 GET_UNSAT_ROOTS_OPTS ?= --info
 
-<% IMPORTED_VOCABULARIES = ENV['IMPORTED_VOCABULARIES'] || { 'imce.jpl.nasa.gov' => [] } %>
+<% IMPORTED_VOCABULARIES = ENV['IMPORTED_VOCABULARIES'] || { 'imce.jpl.nasa.gov' => [], 'purl.org' => [] } %>
+IMPORTED_VOCABULARIES_BUNDLE_STEM ?= imported-vocabularies
 
 IRI_TO_MDID ?= $(TOOLS_DIR)/iri-to-mdid
 IRI_TO_MDID_OPTS ?=
@@ -75,6 +77,8 @@ MAKE_MAKEFILE ?= $(TOOLS_DIR)/make-makefile
 OMG_ORG ?= <%= OMG_ORG = 'www.omg.org' %>
 ONTOLOGIES_DIR ?= <%= ONTOLOGIES_DIR = ENV['ONTOLOGIES_DIR'] || ARTIFACTS_DIR + '/ontologies' %>
 OWL_SUFFIX = .owl
+
+PROJECT ?= europa-clipper
 
 REPORTS_DIR ?= $(ARTIFACTS_DIR)/reports
 REPORTS_TREE ?= $(REPORTS_TREE_PATH)
@@ -127,10 +131,9 @@ tmpfile = $(dir $1).$(notdir $1)
 <%
 
   class OMFGraph
-    def initialize(iri, stem, open, o_dir)
+    def initialize(iri, stem, o_dir)
       @iri = iri
       @stem = stem
-      @open = open
       @o_dir = o_dir
     end
     def ontology_iri
@@ -139,7 +142,6 @@ tmpfile = $(dir $1).$(notdir $1)
     def entailments_iri(type)
       "#{@iri}/#{type}"
     end
-    attr_reader :open
     def ontology_file
       "#{@o_dir}/#{@stem}$(OWL_SUFFIX)"
     end
@@ -160,15 +162,15 @@ tmpfile = $(dir $1).$(notdir $1)
     end
   end
   class OMFOntologyGraph < OMFGraph
-    def initialize(iri, stem, open)
-      super(iri, stem, open, '$(ONTOLOGIES_DIR)')
+    def initialize(iri, stem)
+      super(iri, stem, '$(ONTOLOGIES_DIR)')
     end
   end
   class OMFBundleGraph < OMFGraph
     def initialize(stem, project)
       @stem = stem
       @project = project
-      super(ontology_iri, stem, false, '$(BUNDLES_DIR)')
+      super(ontology_iri, stem, '$(BUNDLES_DIR)')
     end
     def ontology_iri
       'http://' + path
@@ -216,91 +218,68 @@ tmpfile = $(dir $1).$(notdir $1)
 	
   # Traverse ontologies and mine metadata.
 
-  ontologies = {}
-  seen = []
+  metadata = Hash.new { |h, k| h[k] = Set.new }
+  iri_by_group = Hash.new { |h, k| h[k] = Set.new }
   FileUtils.cd(ONTOLOGIES_DIR) do
     PATHS.each do |group, path_hash|
       path_hash.each do |search_path, prune_list|
         Find.find(search_path) do |fp|
 	  Find.prune if prune_list.include?(fp)
 	  next unless File.file?(fp) && File.basename(fp) =~ /\.owl/
-	  warn "#{group} #{fp}"
+	  File.open(fp) do |f|
+	    doc = REXML::Document.new(f)
+
+	    ontology = doc.root.get_elements('owl:Ontology').first
+	    raise "no ontology for #{fp}" unless ontology
+	    iri = ontology.attributes['rdf:about']
+	    iri_by_group[group] << iri
+	    raise "no iri for #{fp}" unless iri
+	    begin
+	      imports = ontology.get_elements('owl:imports').flat_map { |i| i.attributes['rdf:resource'] }
+	    rescue
+	      raise "error in imports for #{fp}"
+	    end
+
+	    stem = "#{File.dirname(fp)}/#{File.basename(fp, '.owl')}"
+	    metadata['nodes'] << { 'iri' => iri, 'stem' => stem }
+
+	    imports.each do |imported|
+	      metadata['edges'] << { 'importing' => iri, 'imported' => imported }
+	    end
+	  end
         end
       end
     end
   end
-  raise "made it"
   
-  metadata = Hash.new { |h, k| h[k] = [] }
-  FileUtils.cd(ONTOLOGIES_DIR) do
-    Find.find('.') do |path|
-      Find.prune if File.basename(path) =~ Regexp.new(OMG_ORG)
-      next unless File.file?(path) && File.basename(path) =~ /\.owl\z/
-      next if File.basename(path) =~ /-embedding\.owl/
-
-      imports = nil
-      File.open(path) do |f|
-	doc = REXML::Document.new(f)
-
-	ontology = doc.root.get_elements('owl:Ontology').first
-	raise "no ontology for #{path}" unless ontology
-	iri = ontology.attributes['rdf:about']
-	raise "no iri for #{path}" unless iri
-	begin
-	  open_attrs = ontology.get_elements('oml:isOMLTerminologyBoxOpen').flat_map { |o| o.get_text.value }
-	rescue
-	  raise "error in open attribute for #{path}"
-	end
-	begin
-	  imports = ontology.get_elements('owl:imports').flat_map { |i| i.attributes['rdf:resource'] }
-	rescue
-	  raise "error in imports for #{path}"
-	end
-	is_open = open_attrs.any? { |o| o == 'true' }
-
-	stem = "#{File.dirname(path)}/#{File.basename(path, '.owl')}"
-	metadata['nodes'] << { 'iri' => iri, 'stem' => stem, 'open' => is_open }
-
-	imports.each do |imported|
-	  metadata['edges'] << { 'importing' => iri, 'imported' => imported }
-	end
-      end
-    end
-  end
-
   # Create graph structures.
 
   graphs = metadata['nodes'].inject({}) do |m, n|
-    m[n['iri']] = OMFOntologyGraph.new(n['iri'], n['stem'], n['open'])
+    m[n['iri']] = OMFOntologyGraph.new(n['iri'], n['stem'])
     m
   end
 
-  # Add graph for export bundle.
+  # Add graph for exported user models bundle.
   
-  bundle_closure_graph = OMFBundleGraph.new('$(BUNDLE_CLOSURE_STEM)', '$(BUNDLE_CLOSURE_PROJECT)')
-  graphs[bundle_closure_graph.ontology_iri] = bundle_closure_graph
+  exported_user_models_bundle_graph = OMFBundleGraph.new('$(EXPORTED_USER_MODELS_BUNDLE_STEM)', '$(PROJECT)')
+  graphs[exported_user_models_bundle_graph.ontology_iri] = exported_user_models_bundle_graph
+
+  # Add graph for exported vocabularies bundle.
   
-  # Find exported terminology graphs.
+  exported_vocabularies_bundle_graph = OMFBundleGraph.new('$(EXPORTED_VOCABULARIES_BUNDLE_STEM)', '$(PROJECT)')
+  graphs[exported_vocabularies_bundle_graph.ontology_iri] = exported_vocabularies_bundle_graph
+
+  # Add graph for imported vocabularies bundle.
   
-  exported_graphs = graphs.values.reject { |g| g.open }
-  warn "#{exported_graphs.length} exported graphs"
- 
-  # Find imported terminology graphs.
-  
-  imported_graphs = graphs.values.select { |g| g.open }
-  warn "#{imported_graphs.length} imported graphs"
- 
-  # Set file prefixes and suffixes.
-  
-  all_graphs = exported_graphs + imported_graphs
-    
+  imported_vocabularies_bundle_graph = OMFBundleGraph.new('$(IMPORTED_VOCABULARIES_BUNDLE_STEM)', '$(PROJECT)')
+  graphs[imported_vocabularies_bundle_graph.ontology_iri] = imported_vocabularies_bundle_graph
+
   # Create location mapping.
   
   location_map = graphs.values.inject({}) do |m, g|
     m[g.ontology_iri] = g.ontology_file_iri
     m
   end
-  location_map[bundle_closure_graph.ontology_iri] = bundle_closure_graph.ontology_file_iri
   								
   # Create imports graph. Omit back edges; processing does not rely on acyclicity at present.
   
@@ -320,14 +299,15 @@ tmpfile = $(dir $1).$(notdir $1)
   end
 
   # Find root nodes of imports graph that correspond to exported packages.
-  
+
   ig = imports_graph.dup
   TransitiveClosure::INSTANCE.closeSimpleDirectedGraph(ig)
   root_nodes = ig.vertexSet.select do |node|
     ig.inDegreeOf(node) == 0 &&
-    exported_graphs.include?(node)
+      iri_by_group['exported_user_models'].include?(node.ontology_iri)
   end
-  warn "#{root_nodes.length} root graphs"
+  warn "root nodes: #{root_nodes.map { |n| n.ontology_iri }.inspect}"
+  raise 'stop'
 
   # Create imports relationships for export bundle
 
