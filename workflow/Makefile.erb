@@ -14,7 +14,6 @@ AUDITS_DIR ?= tests/audits
 AUDITS_TREE ?= $(AUDITS_TREE_PATH)
 AUDITS_TEST_FILE ?= $(AUDITS_DIR)/run-audits$(XML_SUFFIX)
 
-BACKBONE_DISJOINTS ?= Entity ReifiedObjectProperty ReifiedStructuredDataProperty StructuredDatatype
 BACKBONE_PREFIX ?= http://imce.jpl.nasa.gov/backbone
 
 BUNDLES_DIR ?= $(ARTIFACTS_DIR)/bundles
@@ -711,11 +710,10 @@ $(UNSAT_FUNC_PROPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 define do_closure
   @echo closure artifact '->' $@
   @mkdir -p $(dir $@)
-  @$(CLOSE_BUNDLE) $(2) \
+  $(CLOSE_BUNDLE) $(2) \
     --namespace '$(3) => $(3)' \
     --namespace '$(6) => $(5)' \
-    --name $(1) --uri $(2) --backbone-disjoints "$(BACKBONE_DISJOINTS)" \
-    --backbone-prefix $(BACKBONE_PREFIX) \
+    --name $(1) --uri $(2) \
     $(7) \
     > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
