@@ -20,9 +20,10 @@ BACKBONE_PREFIX ?= http://imce.jpl.nasa.gov/backbone
 BUNDLES_DIR ?= $(ARTIFACTS_DIR)/bundles
 BUNDLE_CLOSURE_STEM ?= export-bundle
 
-CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
-CLOSE_BUNDLE_OPTS ?= --export --iri-file $(CLOSE_BUNDLE_IRI_FILE)
-CLOSE_BUNDLE_IRI_FILE ?= <%= CLOSE_BUNDLE_IRI_FILE = ENV['CLOSE_BUNDLE_IRI_FILE'] || ARTIFACTS_DIR + '/close_bundle_iris' %>
+CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-tbox-bundle
+CLOSE_EXPORTED_USER_MODELS_BUNDLE_OPTS ?= --no-disjoints --iri-file $(EXPORTED_USER_MODELS_BUNDLE_IRI_FILE)
+CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS ?= 
+CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS ?= --no-disjoints
 
 DEPENDENCIES_FILE ?= .dependencies
 
@@ -38,6 +39,7 @@ ENTAILMENTS_DIR ?= $(ARTIFACTS_DIR)/entailments
 EXPORTED_VOCABULARIES_BUNDLE_STEM ?= exported-vocabularies
 <% EXPORTED_USER_MODELS = ENV['EXPORTED_USER_MODELS'] || { 'europa.jpl.nasa.gov' => [ 'europa.jpl.nasa.gov/efse/libraries' ] } %>
 EXPORTED_USER_MODELS_BUNDLE_STEM ?= exported-user-models
+EXPORTED_USER_MODELS_BUNDLE_IRI_FILE ?= <%= EXPORTED_USER_MODELS_BUNDLE_IRI_FILE = ENV['EXPORTED_USER_MODELS_BUNDLE_IRI_FILE'] || ARTIFACTS_DIR + '/exported_user_models_bundle_iris' %>
 
 EXTRACT ?= $(JRUBY_CMD) $(TOOLS_DIR)/extract-ontology
 EXTRACT_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
@@ -192,13 +194,6 @@ tmpfile = $(dir $1).$(notdir $1)
     end
   end
 
-  def find_root_nodes(imports_graph, iris)
-    imports_graph.vertexSet.select do |node|
-      imports_graph.inDegreeOf(node) == 0 &&
-	iris.include?(node.ontology_iri)
-    end
-  end
-  
   require 'fileutils'
   require 'find'
   require 'json'
@@ -226,7 +221,7 @@ tmpfile = $(dir $1).$(notdir $1)
   # Traverse ontologies and mine metadata.
 
   metadata = Hash.new { |h, k| h[k] = Set.new }
-  iri_by_group = Hash.new { |h, k| h[k] = Set.new }
+  iris_by_group = Hash.new { |h, k| h[k] = Set.new }
   FileUtils.cd(ONTOLOGIES_DIR) do
     PATHS.each do |group, path_hash|
       path_hash.each do |search_path, prune_list|
@@ -239,7 +234,7 @@ tmpfile = $(dir $1).$(notdir $1)
 	    ontology = doc.root.get_elements('owl:Ontology').first
 	    raise "no ontology for #{fp}" unless ontology
 	    iri = ontology.attributes['rdf:about']
-	    iri_by_group[group] << iri
+	    iris_by_group[group] << iri
 	    raise "no iri for #{fp}" unless iri
 	    begin
 	      imports = ontology.get_elements('owl:imports').flat_map { |i| i.attributes['rdf:resource'] }
@@ -305,37 +300,24 @@ tmpfile = $(dir $1).$(notdir $1)
     memo
   end
 
-  # Find root nodes of imports graph that correspond to exported user models.
-
-  exported_user_models_root_nodes = find_root_nodes(imports_graph, iri_by_group['exported_user_models'])
-  warn "exported user models root nodes: #{exported_user_models_root_nodes.map { |n| n.ontology_iri }.inspect}"
-
-  # Find root nodes of imports graph that correspond to exported vocabularies.
-
-  exported_vocabularies_root_nodes = find_root_nodes(imports_graph, iri_by_group['exported_vocabularies'])
-  warn "exported vocabularies root nodes: #{exported_vocabularies_root_nodes.map { |n| n.ontology_iri }.inspect}"
-
-  # Find root nodes of imports graph that correspond to imported vocabularies.
-
-  imported_vocabularies_root_nodes = find_root_nodes(imports_graph, iri_by_group['imported_vocabularies'])
-  warn "imported vocabularies root nodes: #{imported_vocabularies_root_nodes.map { |n| n.ontology_iri }.inspect}"
-
-  # Create imports relationships for exported user models bundle.
-
-  # Create imports relationships for export bundle
+  # Create imports relationships for synthesized bundles.
 
   {
-    exported_user_models_bundle_graph => exported_user_models_root_nodes,
-    exported_vocabularies_bundle_graph => exported_vocabularies_root_nodes,
-    imported_vocabularies_bundle_graph => imported_vocabularies_root_nodes,
-  }.each do |graph, root_nodes|
+    exported_user_models_bundle_graph => iris_by_group['exported_user_models'],
+    exported_vocabularies_bundle_graph => iris_by_group['exported_vocabularies'],
+    imported_vocabularies_bundle_graph => iris_by_group['imported_vocabularies'],
+  }.each do |graph, iris|
     raise "bad vertex #{graph.inspect}" unless OMFBundleGraph === graph
     imports_graph.addVertex(graph)
-    root_nodes.each do |node|
-      raise "bad edge target #{node.inspect}" unless OMFGraph === node
-      imports_graph.addEdge(graph, node)
+    iris.each do |iri|
+      g = graphs[iri]
+      raise "bad edge target #{g.inspect}" unless OMFGraph === g
+      imports_graph.addVertex(g)
+      imports_graph.addEdge(graph, g)
     end
   end
+  imports_graph.addEdge(exported_user_models_bundle_graph, exported_vocabularies_bundle_graph)
+  imports_graph.addEdge(exported_vocabularies_bundle_graph, imported_vocabularies_bundle_graph)
   
   # Form transitive closure of imports_graph.
   
@@ -356,46 +338,81 @@ tmpfile = $(dir $1).$(notdir $1)
     bad = imports_map[source].reject { |i| OMFGraph === i }
     raise "bad imports for #{source.ontology_iri}: #{bad.inspect}" unless bad.empty?
   end
-  warn imports_map.inspect
-  imports_map.each do |d, il|
-    warn "#{d.ontology_iri}:"
-    il.each do |i|
-      warn "    #{i.ontology_iri}"
-    end
-  end
-  raise 'stop'
 
-  # Create rules for creating bundle closure.
+  # Create rule for creating synthesized bundles.
+
+  synthesized_bundles_rule = Makefile::Rule.new('synthesized-bundles')
+  synthesized_bundles_rule.prereqs += [
+    exported_user_models_bundle_graph,
+    exported_vocabularies_bundle_graph,
+    imported_vocabularies_bundle_graph,
+  ].map { |g| g.ontology_file }
+  
+  # Create rules for creating exported user models bundle closure.
  
-  bundle_closure_file_rule = Makefile::Rule.new(bundle_closure_graph.ontology_file)
+  exported_user_models_bundle_file_rule = Makefile::Rule.new(exported_user_models_bundle_graph.ontology_file)
   
-  iris = root_nodes.map { |o| o.ontology_iri }
-  files = root_nodes.map { |o| o.ontology_file }
+  iris = []
+  files = []
+  imports_map[exported_user_models_bundle_graph].each do |gl|
+    iris << gl.ontology_iri
+    files << gl.ontology_file
+  end
   
-  vocabulary_bundle_graph = graphs[VOCABULARY_BUNDLE_IRI]
-  raise "no graph for #{VOCABULARY_BUNDLE_IRI}" unless vocabulary_bundle_graph
-  iris << vocabulary_bundle_graph.ontology_iri
-  files << vocabulary_bundle_graph.ontology_file
+  File.open(EXPORTED_USER_MODELS_BUNDLE_IRI_FILE, 'w') { |f| f.write(iris.join("\n")) }
+  
+  exported_user_models_bundle_file_rule.prereqs += files 
+  exported_user_models_bundle_file_rule.cmds << "$(call do_closure,#{exported_user_models_bundle_graph.name}," +
+  			           "$(CLOSE_EXPORTED_USER_MODELS_BUNDLE_OPTS),#{exported_user_models_bundle_graph.ontology_iri}," +
+                                   "#{exported_user_models_bundle_graph.abbrev},#{exported_user_models_bundle_graph.backbone_iri}," +
+				   "#{exported_user_models_bundle_graph.backbone_abbrev})"
 
-  File.open(CLOSE_BUNDLE_IRI_FILE, 'w') { |f| f.write(iris.join("\n")) }
+  # Create rules for creating exported user models bundle closure.
+ 
+  exported_vocabularies_bundle_file_rule = Makefile::Rule.new(exported_vocabularies_bundle_graph.ontology_file)
   
-  bundle_closure_file_rule.prereqs += files 
-  bundle_closure_file_rule.cmds << "$(call do_closure,#{bundle_closure_graph.name},#{bundle_closure_graph.ontology_iri}," +
-                                   "#{bundle_closure_graph.abbrev},#{bundle_closure_graph.backbone_iri}," +
-				   "#{bundle_closure_graph.backbone_abbrev})"
+  iris = []
+  files = []
+  imports_map[exported_vocabularies_bundle_graph].each do |gl|
+    iris << gl.ontology_iri
+    files << gl.ontology_file
+  end
   
+  exported_vocabularies_bundle_file_rule.prereqs += files 
+  exported_vocabularies_bundle_file_rule.cmds << "$(call do_closure,#{exported_vocabularies_bundle_graph.name}," +
+  			           "$(CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS),#{exported_vocabularies_bundle_graph.ontology_iri}," +
+                                   "#{exported_vocabularies_bundle_graph.abbrev},#{exported_vocabularies_bundle_graph.backbone_iri}," +
+				   "#{exported_vocabularies_bundle_graph.backbone_abbrev},#{files.join(' ')})"
+
+  # Create rules for creating imported user models bundle closure.
+ 
+  imported_vocabularies_bundle_file_rule = Makefile::Rule.new(imported_vocabularies_bundle_graph.ontology_file)
+  
+  iris = []
+  files = []
+  imports_map[imported_vocabularies_bundle_graph].each do |gl|
+    iris << gl.ontology_iri
+    files << gl.ontology_file
+  end
+  
+  imported_vocabularies_bundle_file_rule.prereqs += files 
+  imported_vocabularies_bundle_file_rule.cmds << "$(call do_closure,#{imported_vocabularies_bundle_graph.name}," +
+  			           "$(CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS),#{imported_vocabularies_bundle_graph.ontology_iri}," +
+                                   "#{imported_vocabularies_bundle_graph.abbrev},#{imported_vocabularies_bundle_graph.backbone_iri}," +
+				   "#{imported_vocabularies_bundle_graph.backbone_abbrev},#{files.join(' ')})"
+
   # Create rules for validating root ontologies.
  
   validate_roots_test_file_rule = Makefile::Rule.new('$(VALIDATE_ROOTS_TEST_FILE)')
-  validate_roots_test_file_rule.prereqs << bundle_closure_graph.ontology_file
-  validate_roots_test_file_rule.cmds << "$(call validate_roots,$(VALIDATE_ROOTS_ID),#{bundle_closure_graph.ontology_iri})"
+  validate_roots_test_file_rule.prereqs << exported_user_models_bundle_graph.ontology_file
+  validate_roots_test_file_rule.cmds << "$(call validate_roots,$(VALIDATE_ROOTS_ID),#{exported_user_models_bundle_graph.ontology_iri})"
   
   # Create rules for calculating entailments.
   
   entailments_top_rule = Makefile::Rule.new('entailments')
   entailments_rules = [entailments_top_rule]
   ENTAILMENTS.each do |type, data|
-    [bundle_closure_graph].each do |o|
+    [exported_user_models_bundle_graph].each do |o|
       input_iri = o.ontology_iri
       output_iri = o.entailments_iri(type)
       target = o.entailments_file(type)
@@ -503,7 +520,7 @@ load-production:	load-entailments-production
 <%=
   rule = Rule.new('load-entailments-production')
   graph_rules = []
-  [bundle_closure_graph].each do |g|
+  [exported_user_models_bundle_graph].each do |g|
     ENTAILMENTS.keys.each do |type|
       rule.prereqs << g.entailments_sentinel(type)
       graph_rules << graph_rule = Rule.new(g.entailments_sentinel(type))
@@ -530,11 +547,11 @@ endef
 
 <%=
   rule = Rule.new('$(AUDITS_TEST_FILE)')
-  iris = exported_graphs.map { |g| g.ontology_iri }
-  File.open(RUN_AUDITS_IRI_FILE, 'w') { |f| f.write(iris.join("\n")) }
-  rule.prereqs << bundle_closure_graph.ontology_sentinel
-  rule.prereqs += imports_map[bundle_closure_graph].map { |i| i.ontology_sentinel }
-  rule.prereqs += ENTAILMENTS.keys.map { |type| bundle_closure_graph.entailments_sentinel(type) }
+  iris = iris_by_group['exported_user_models'] + [ exported_user_models_bundle_graph.ontology_iri ]
+  File.open(RUN_AUDITS_IRI_FILE, 'w') { |f| f.write(iris.to_a.join("\n")) }
+  rule.prereqs << exported_user_models_bundle_graph.ontology_sentinel
+  rule.prereqs += imports_map[exported_user_models_bundle_graph].map { |i| i.ontology_sentinel }
+  rule.prereqs += ENTAILMENTS.keys.map { |type| exported_user_models_bundle_graph.entailments_sentinel(type) }
   rule.cmds << "$(call do_audit,--audit-tree $(AUDITS_TREE))"
   rule
 %>
@@ -555,11 +572,11 @@ endef
 
 <%=
   rule = Rule.new('$(REPORTS_TEST_FILE)')
-  iris = exported_graphs.map { |g| g.ontology_iri }
-  File.open(RUN_REPORTS_IRI_FILE, 'w') { |f| f.write(iris.join("\n")) }
-  rule.prereqs << bundle_closure_graph.ontology_sentinel
-  rule.prereqs += imports_map[bundle_closure_graph].map { |i| i.ontology_sentinel }
-  rule.prereqs += ENTAILMENTS.keys.map { |type| bundle_closure_graph.entailments_sentinel(type) }
+  iris = iris_by_group['exported_user_models'] + [ exported_user_models_bundle_graph.ontology_iri ]
+  File.open(RUN_REPORTS_IRI_FILE, 'w') { |f| f.write(iris.to_a.join("\n")) }
+  rule.prereqs << exported_user_models_bundle_graph.ontology_sentinel
+  rule.prereqs += imports_map[exported_user_models_bundle_graph].map { |i| i.ontology_sentinel }
+  rule.prereqs += ENTAILMENTS.keys.map { |type| exported_user_models_bundle_graph.entailments_sentinel(type) }
   rule.cmds << "$(call do_report,--audit-tree $(REPORTS_TREE))"
   rule
 %>
@@ -683,20 +700,31 @@ identify-unsat-func-props: $(UNSAT_FUNC_PROPS_REPORT_FILE)
 $(UNSAT_FUNC_PROPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 	$(call do_identify_unsat_func_props)
 	
-.PHONY:	closure-artifacts
+#
+# synthesized-bundles
+#
+
+.PHONY: synthesized-bundles
+
+<%= synthesized_bundles_rule %>
 
 define do_closure
   @echo closure artifact '->' $@
   @mkdir -p $(dir $@)
-  @$(CLOSE_BUNDLE) $(CLOSE_BUNDLE_OPTS) \
-    --namespace '$(3) => $(2)' \
-    --namespace '$(5) => $(4)' \
+  @$(CLOSE_BUNDLE) $(2) \
+    --namespace '$(3) => $(3)' \
+    --namespace '$(6) => $(5)' \
     --name $(1) --uri $(2) --backbone-disjoints "$(BACKBONE_DISJOINTS)" \
     --backbone-prefix $(BACKBONE_PREFIX) \
+    $(7) \
     > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
-<%= bundle_closure_file_rule %>
+<%= exported_user_models_bundle_file_rule %>
+
+<%= exported_vocabularies_bundle_file_rule %>
+
+<%= imported_vocabularies_bundle_file_rule %>
 
 #
 # Makefile
