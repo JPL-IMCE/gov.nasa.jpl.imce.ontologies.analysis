@@ -192,6 +192,13 @@ tmpfile = $(dir $1).$(notdir $1)
     end
   end
 
+  def find_root_nodes(imports_graph, iris)
+    imports_graph.vertexSet.select do |node|
+      imports_graph.inDegreeOf(node) == 0 &&
+	iris.include?(node.ontology_iri)
+    end
+  end
+  
   require 'fileutils'
   require 'find'
   require 'json'
@@ -298,24 +305,36 @@ tmpfile = $(dir $1).$(notdir $1)
     memo
   end
 
-  # Find root nodes of imports graph that correspond to exported packages.
+  # Find root nodes of imports graph that correspond to exported user models.
 
-  ig = imports_graph.dup
-  TransitiveClosure::INSTANCE.closeSimpleDirectedGraph(ig)
-  root_nodes = ig.vertexSet.select do |node|
-    ig.inDegreeOf(node) == 0 &&
-      iri_by_group['exported_user_models'].include?(node.ontology_iri)
-  end
-  warn "root nodes: #{root_nodes.map { |n| n.ontology_iri }.inspect}"
-  raise 'stop'
+  exported_user_models_root_nodes = find_root_nodes(imports_graph, iri_by_group['exported_user_models'])
+  warn "exported user models root nodes: #{exported_user_models_root_nodes.map { |n| n.ontology_iri }.inspect}"
+
+  # Find root nodes of imports graph that correspond to exported vocabularies.
+
+  exported_vocabularies_root_nodes = find_root_nodes(imports_graph, iri_by_group['exported_vocabularies'])
+  warn "exported vocabularies root nodes: #{exported_vocabularies_root_nodes.map { |n| n.ontology_iri }.inspect}"
+
+  # Find root nodes of imports graph that correspond to imported vocabularies.
+
+  imported_vocabularies_root_nodes = find_root_nodes(imports_graph, iri_by_group['imported_vocabularies'])
+  warn "imported vocabularies root nodes: #{imported_vocabularies_root_nodes.map { |n| n.ontology_iri }.inspect}"
+
+  # Create imports relationships for exported user models bundle.
 
   # Create imports relationships for export bundle
 
-  raise "bad vertex #{bundle_closure_graph.inspect}" unless OMFBundleGraph === bundle_closure_graph
-  imports_graph.addVertex(bundle_closure_graph)
-  root_nodes.each do |node|
-    raise "bad edge target #{node.inspect}" unless OMFGraph === node
-    imports_graph.addEdge(bundle_closure_graph, node)
+  {
+    exported_user_models_bundle_graph => exported_user_models_root_nodes,
+    exported_vocabularies_bundle_graph => exported_vocabularies_root_nodes,
+    imported_vocabularies_bundle_graph => imported_vocabularies_root_nodes,
+  }.each do |graph, root_nodes|
+    raise "bad vertex #{graph.inspect}" unless OMFBundleGraph === graph
+    imports_graph.addVertex(graph)
+    root_nodes.each do |node|
+      raise "bad edge target #{node.inspect}" unless OMFGraph === node
+      imports_graph.addEdge(graph, node)
+    end
   end
   
   # Form transitive closure of imports_graph.
@@ -337,6 +356,14 @@ tmpfile = $(dir $1).$(notdir $1)
     bad = imports_map[source].reject { |i| OMFGraph === i }
     raise "bad imports for #{source.ontology_iri}: #{bad.inspect}" unless bad.empty?
   end
+  warn imports_map.inspect
+  imports_map.each do |d, il|
+    warn "#{d.ontology_iri}:"
+    il.each do |i|
+      warn "    #{i.ontology_iri}"
+    end
+  end
+  raise 'stop'
 
   # Create rules for creating bundle closure.
  
