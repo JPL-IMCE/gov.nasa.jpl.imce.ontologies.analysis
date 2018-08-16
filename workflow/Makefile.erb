@@ -20,9 +20,9 @@ BUNDLES_DIR ?= $(ARTIFACTS_DIR)/bundles
 BUNDLE_CLOSURE_STEM ?= export-bundle
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-tbox-bundle
-CLOSE_EXPORTED_USER_MODELS_BUNDLE_OPTS ?= --no-disjoints --iri-file $(EXPORTED_USER_MODELS_BUNDLE_IRI_FILE)
-CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS ?= 
-CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS ?= --no-disjoints
+CLOSE_EXPORTED_USER_MODELS_BUNDLE_OPTS ?= --debug --no-disjoints --iri-file $(EXPORTED_USER_MODELS_BUNDLE_IRI_FILE)
+CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS ?= --debug
+CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS ?= --debug --no-disjoints
 
 DEPENDENCIES_FILE ?= .dependencies
 
@@ -381,7 +381,7 @@ tmpfile = $(dir $1).$(notdir $1)
   exported_vocabularies_bundle_file_rule.cmds << "$(call do_closure,#{exported_vocabularies_bundle_graph.name}," +
   			           "$(CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS),#{exported_vocabularies_bundle_graph.ontology_iri}," +
                                    "#{exported_vocabularies_bundle_graph.abbrev},#{exported_vocabularies_bundle_graph.backbone_iri}," +
-				   "#{exported_vocabularies_bundle_graph.backbone_abbrev},#{files.join(' ')})"
+				   "#{exported_vocabularies_bundle_graph.backbone_abbrev},#{iris.join(' ')})"
 
   # Create rules for creating imported user models bundle closure.
  
@@ -398,7 +398,7 @@ tmpfile = $(dir $1).$(notdir $1)
   imported_vocabularies_bundle_file_rule.cmds << "$(call do_closure,#{imported_vocabularies_bundle_graph.name}," +
   			           "$(CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS),#{imported_vocabularies_bundle_graph.ontology_iri}," +
                                    "#{imported_vocabularies_bundle_graph.abbrev},#{imported_vocabularies_bundle_graph.backbone_iri}," +
-				   "#{imported_vocabularies_bundle_graph.backbone_abbrev},#{files.join(' ')})"
+				   "#{imported_vocabularies_bundle_graph.backbone_abbrev},#{iris.join(' ')})"
 
   # Create rules for validating root ontologies.
  
@@ -711,8 +711,6 @@ define do_closure
   @echo closure artifact '->' $@
   @mkdir -p $(dir $@)
   $(CLOSE_BUNDLE) $(2) \
-    --namespace '$(3) => $(3)' \
-    --namespace '$(6) => $(5)' \
     --name $(1) --uri $(2) \
     $(7) \
     > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
