@@ -7,7 +7,10 @@ export ETC=$(dirname $(pwd))/etc
 export WORKFLOW_SOURCES=$(dirname $(pwd))/workflow
 
 # Read-only
-export ONTOLOGIES=$(dirname $(pwd))/target/ontologies
+export BUNDLES_DIR=$(dirname $(pwd))/target/workflow/artifacts/bundles
+
+# Read-only
+export ONTOLOGIES_DIR=$(dirname $(pwd))/target/workflow/artifacts/ontologies
 
 # Read-only
 FUSEKI_PROJ="$(dirname $(dirname "$(pwd)"))/gov.nasa.jpl.imce.ontologies.fuseki"
@@ -31,6 +34,7 @@ export FUSEKI_BASE=$(dirname $(pwd))/target/run
 
 export RUBYLIB=$TOOLS/lib/Application:\
 $TOOLS/lib/Audit:\
+$TOOLS/lib/BundleClosure:\
 $TOOLS/lib/IMCE:\
 $TOOLS/lib/Jena:\
 $TOOLS/lib/Makefile:\

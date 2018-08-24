@@ -15,13 +15,15 @@ AUDITS_TREE ?= $(AUDITS_TREE_PATH)
 AUDITS_TEST_FILE ?= $(AUDITS_DIR)/run-audits$(XML_SUFFIX)
 
 BACKBONE_PREFIX ?= http://imce.jpl.nasa.gov/backbone
-
+BACKBONE_ABSTRACT ?= Aspect
+BACKBONE_CONCRETE ?= Concept Entity ReifiedObjectProperty ReifiedStructuredDataProperty StructuredDatat
 BUNDLES_DIR ?= $(ARTIFACTS_DIR)/bundles
 BUNDLE_CLOSURE_STEM ?= export-bundle
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-tbox-bundle
-CLOSE_EXPORTED_USER_MODELS_BUNDLE_OPTS ?= --debug --no-disjoints --iri-file $(EXPORTED_USER_MODELS_BUNDLE_IRI_FILE)
-CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS ?= --debug
+CLOSE_EXPORTED_USER_MODELS_BUNDLE_OPTS ?= --debug --no-disjoints
+CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS ?= --debug --excise '$(BACKBONE_PREFIX)' --backbone_iri '$(BACKBONE_PREFIX)' \
+		     --abstract '$(BACKBONE_ABSTRACT)' --concrete '$(BACKBONE_CONCRETE)'
 CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS ?= --debug --no-disjoints
 
 DEPENDENCIES_FILE ?= .dependencies
@@ -38,7 +40,6 @@ ENTAILMENTS_DIR ?= $(ARTIFACTS_DIR)/entailments
 EXPORTED_VOCABULARIES_BUNDLE_STEM ?= exported-vocabularies
 <% EXPORTED_USER_MODELS = ENV['EXPORTED_USER_MODELS'] || { 'europa.jpl.nasa.gov' => [ 'europa.jpl.nasa.gov/efse/libraries' ] } %>
 EXPORTED_USER_MODELS_BUNDLE_STEM ?= exported-user-models
-EXPORTED_USER_MODELS_BUNDLE_IRI_FILE ?= <%= EXPORTED_USER_MODELS_BUNDLE_IRI_FILE = ENV['EXPORTED_USER_MODELS_BUNDLE_IRI_FILE'] || ARTIFACTS_DIR + '/exported_user_models_bundle_iris' %>
 
 EXTRACT ?= $(JRUBY_CMD) $(TOOLS_DIR)/extract-ontology
 EXTRACT_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
@@ -86,12 +87,9 @@ REPORTS_TREE ?= $(REPORTS_TREE_PATH)
 REPORTS_TEST_FILE ?= $(REPORTS_DIR)/run-reports$(ZIP_SUFFIX)
 RUBY ?= $(JRUBY)
 RUN_AUDITS ?= $(JRUBY_CMD) $(TOOLS_DIR)/run-audits-jena
-RUN_AUDITS_OPTS ?= --info --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET) --iri-file $(RUN_AUDITS_IRI_FILE)
-RUN_AUDITS_IRI_FILE ?= <%= RUN_AUDITS_IRI_FILE = ENV['RUN_AUDITS_IRI_FILE'] || ARTIFACTS_DIR + '/run_audits_iris' %>
+RUN_AUDITS_OPTS ?= --info --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
 RUN_REPORTS ?= $(RUN_AUDITS)
-RUN_REPORTS_OPTS ?= --info --report --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET) --iri-file $(RUN_REPORTS_IRI_FILE)
-RUN_REPORTS_IRI_FILE ?= $(ARTIFACTS_DIR)/run_reports_iris
-RUN_REPORTS_IRI_FILE ?= <%= RUN_REPORTS_IRI_FILE = ENV['RUN_REPORTS_IRI_FILE'] || ARTIFACTS_DIR + '/run_reports_iris' %>
+RUN_REPORTS_OPTS ?= --info --report --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
 
 SENTINELS_DIR ?= $(ARTIFACTS_DIR)/.sentinels
 
@@ -358,13 +356,11 @@ tmpfile = $(dir $1).$(notdir $1)
     files << gl.ontology_file
   end
   
-  File.open(EXPORTED_USER_MODELS_BUNDLE_IRI_FILE, 'w') { |f| f.write(iris.join("\n")) }
-  
   exported_user_models_bundle_file_rule.prereqs += files 
-  exported_user_models_bundle_file_rule.cmds << "$(call do_closure,#{exported_user_models_bundle_graph.name}," +
+  exported_user_models_bundle_file_rule.cmds << "$(call do_close_tbox,#{exported_user_models_bundle_graph.name}," +
   			           "$(CLOSE_EXPORTED_USER_MODELS_BUNDLE_OPTS),#{exported_user_models_bundle_graph.ontology_iri}," +
                                    "#{exported_user_models_bundle_graph.abbrev},#{exported_user_models_bundle_graph.backbone_iri}," +
-				   "#{exported_user_models_bundle_graph.backbone_abbrev})"
+				   "#{exported_user_models_bundle_graph.backbone_abbrev},#{iris.join(' ')})"
 
   # Create rules for creating exported user models bundle closure.
  
@@ -378,7 +374,7 @@ tmpfile = $(dir $1).$(notdir $1)
   end
   
   exported_vocabularies_bundle_file_rule.prereqs += files 
-  exported_vocabularies_bundle_file_rule.cmds << "$(call do_closure,#{exported_vocabularies_bundle_graph.name}," +
+  exported_vocabularies_bundle_file_rule.cmds << "$(call do_close_tbox,#{exported_vocabularies_bundle_graph.name}," +
   			           "$(CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS),#{exported_vocabularies_bundle_graph.ontology_iri}," +
                                    "#{exported_vocabularies_bundle_graph.abbrev},#{exported_vocabularies_bundle_graph.backbone_iri}," +
 				   "#{exported_vocabularies_bundle_graph.backbone_abbrev},#{iris.join(' ')})"
@@ -395,7 +391,7 @@ tmpfile = $(dir $1).$(notdir $1)
   end
   
   imported_vocabularies_bundle_file_rule.prereqs += files 
-  imported_vocabularies_bundle_file_rule.cmds << "$(call do_closure,#{imported_vocabularies_bundle_graph.name}," +
+  imported_vocabularies_bundle_file_rule.cmds << "$(call do_close_tbox,#{imported_vocabularies_bundle_graph.name}," +
   			           "$(CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS),#{imported_vocabularies_bundle_graph.ontology_iri}," +
                                    "#{imported_vocabularies_bundle_graph.abbrev},#{imported_vocabularies_bundle_graph.backbone_iri}," +
 				   "#{imported_vocabularies_bundle_graph.backbone_abbrev},#{iris.join(' ')})"
@@ -541,17 +537,16 @@ run-audits:	$(AUDITS_TEST_FILE)
 define do_audit
   @echo audit '->' $@
   @mkdir -p $(dir $@)
-  @$(RUN_AUDITS) $(RUN_AUDITS_OPTS) $(1) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  @$(RUN_AUDITS) $(RUN_AUDITS_OPTS) $(1) $(2) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 <%=
   rule = Rule.new('$(AUDITS_TEST_FILE)')
   iris = iris_by_group['exported_user_models'] + [ exported_user_models_bundle_graph.ontology_iri ]
-  File.open(RUN_AUDITS_IRI_FILE, 'w') { |f| f.write(iris.to_a.join("\n")) }
   rule.prereqs << exported_user_models_bundle_graph.ontology_sentinel
   rule.prereqs += imports_map[exported_user_models_bundle_graph].map { |i| i.ontology_sentinel }
   rule.prereqs += ENTAILMENTS.keys.map { |type| exported_user_models_bundle_graph.entailments_sentinel(type) }
-  rule.cmds << "$(call do_audit,--audit-tree $(AUDITS_TREE))"
+  rule.cmds << "$(call do_audit,--audit-tree $(AUDITS_TREE),#{iris.to_a.join(' ')})"
   rule
 %>
 
@@ -566,17 +561,16 @@ run-reports:	$(REPORTS_TEST_FILE)
 define do_report
   @echo report '->' $@
   @mkdir -p $(dir $@)
-  @$(RUN_REPORTS) $(RUN_REPORTS_OPTS) $(1) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  @$(RUN_REPORTS) $(RUN_REPORTS_OPTS) $(1) $(2) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 <%=
   rule = Rule.new('$(REPORTS_TEST_FILE)')
   iris = iris_by_group['exported_user_models'] + [ exported_user_models_bundle_graph.ontology_iri ]
-  File.open(RUN_REPORTS_IRI_FILE, 'w') { |f| f.write(iris.to_a.join("\n")) }
   rule.prereqs << exported_user_models_bundle_graph.ontology_sentinel
   rule.prereqs += imports_map[exported_user_models_bundle_graph].map { |i| i.ontology_sentinel }
   rule.prereqs += ENTAILMENTS.keys.map { |type| exported_user_models_bundle_graph.entailments_sentinel(type) }
-  rule.cmds << "$(call do_report,--audit-tree $(REPORTS_TREE))"
+  rule.cmds << "$(call do_report,--audit-tree $(REPORTS_TREE),#{iris.to_a.join(' ')})"
   rule
 %>
 
@@ -707,11 +701,13 @@ $(UNSAT_FUNC_PROPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 
 <%= synthesized_bundles_rule %>
 
-define do_closure
+define do_close_tbox
   @echo closure artifact '->' $@
   @mkdir -p $(dir $@)
   $(CLOSE_BUNDLE) $(2) \
     --name $(1) --uri $(2) \
+    --namespace '$(4)=>$(3)' \
+    --namespace '$(6)=>$(5)' \
     $(7) \
     > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
