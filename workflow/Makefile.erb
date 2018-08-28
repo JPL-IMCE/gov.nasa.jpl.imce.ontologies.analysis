@@ -31,7 +31,7 @@ CURL_OPTS ?= --silent
 DEPENDENCIES_FILE ?= .dependencies
 
 ENTAIL ?= $(JRUBY_CMD) $(TOOLS_DIR)/entail
-ENTAIL_OPTS = --debug --remove-backbone
+ENTAIL_OPTS = --info --remove-backbone
 
 EMPTY_IMPORTS_FILE ?= empty-imports.yaml
 
@@ -49,11 +49,7 @@ EXTRACT_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET
 FUSEKI_S_DELETE ?= $(FUSEKI_BIN)/s-delete
 FUSEKI_S_GET ?= $(FUSEKI_BIN)/s-get
 FUSEKI_S_PUT ?= $(FUSEKI_BIN)/s-put
-# FUSEKI_PROTOCOL ?= http:
-# FUSEKI_HOST ?= localhost
-# FUSEKI_PORT ?= 8898
-# FUSEKI_DATASET ?= europa-efse
-FUSEKI_ENDPOINT ?= $(FUSEKI_PROTOCOL)//$(FUSEKI_HOST):$(FUSEKI_PORT)/$(FUSEKI_DATASET)
+FUSEKI_ENDPOINT ?= $(FUSEKI_PROTOCOL)//$(FUSEKI_HOST):$(FUSEKI_PORT)
 
 GET_UNSATS ?= $(TOOLS_DIR)/get-unsats
 GET_UNSAT_PROPS_OPTS ?= --get-props
@@ -491,7 +487,7 @@ define do_load
   @$(CURL) $(CURL_OPTS) \
     -X PUT \
     -H "Content-Type: application/rdf+xml" \
-    -G '$(FUSEKI_ENDPOINT)/data' \
+    -G '$(FUSEKI_ENDPOINT)/$(FUSEKI_DATASET)/data' \
     --data-urlencode graph='$(1)' \
     -T '$(2)' > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
