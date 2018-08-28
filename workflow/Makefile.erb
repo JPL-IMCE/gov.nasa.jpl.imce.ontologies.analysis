@@ -21,15 +21,17 @@ BUNDLES_DIR ?= $(ARTIFACTS_DIR)/bundles
 BUNDLE_CLOSURE_STEM ?= export-bundle
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-tbox-bundle
-CLOSE_EXPORTED_USER_MODELS_BUNDLE_OPTS ?= --debug --no-disjoints
-CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS ?= --debug --excise '$(BACKBONE_PREFIX)' --backbone_iri '$(BACKBONE_PREFIX)' \
+CLOSE_EXPORTED_USER_MODELS_BUNDLE_OPTS ?= --info --no-disjoints
+CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS ?= --info --excise '$(BACKBONE_PREFIX)' --backbone_iri '$(BACKBONE_PREFIX)' \
 		     --abstract '$(BACKBONE_ABSTRACT)' --concrete '$(BACKBONE_CONCRETE)'
-CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS ?= --debug --no-disjoints
+CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS ?= --info --no-disjoints
+CURL ?= curl
+CURL_OPTS ?= --silent
 
 DEPENDENCIES_FILE ?= .dependencies
 
 ENTAIL ?= $(JRUBY_CMD) $(TOOLS_DIR)/entail
-ENTAIL_OPTS = --remove-backbone
+ENTAIL_OPTS = --debug --remove-backbone
 
 EMPTY_IMPORTS_FILE ?= empty-imports.yaml
 
@@ -47,6 +49,11 @@ EXTRACT_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET
 FUSEKI_S_DELETE ?= $(FUSEKI_BIN)/s-delete
 FUSEKI_S_GET ?= $(FUSEKI_BIN)/s-get
 FUSEKI_S_PUT ?= $(FUSEKI_BIN)/s-put
+# FUSEKI_PROTOCOL ?= http:
+# FUSEKI_HOST ?= localhost
+# FUSEKI_PORT ?= 8898
+# FUSEKI_DATASET ?= europa-efse
+FUSEKI_ENDPOINT ?= $(FUSEKI_PROTOCOL)//$(FUSEKI_HOST):$(FUSEKI_PORT)/$(FUSEKI_DATASET)
 
 GET_UNSATS ?= $(TOOLS_DIR)/get-unsats
 GET_UNSAT_PROPS_OPTS ?= --get-props
@@ -106,7 +113,7 @@ UNSAT_FUNC_PROPS_REPORT_FILE = $(TESTS_DIR)/unsat-func-props.csv
 UNSAT_ROOTS_REPORT_FILE = $(TESTS_DIR)/unsat-roots.csv
 
 VALIDATE_OWL ?= $(JRUBY_CMD) -J-Djava.util.logging.config.file=logging.properties $(TOOLS_DIR)/validate-owl
-VALIDATE_OWL_OPTS ?= --debug --satisfiability
+VALIDATE_OWL_OPTS ?= --info --satisfiability
 
 VALIDATE_ROOTS_TEST_FILE ?= $(TESTS_DIR)/validate-roots$(XML_SUFFIX)
 VALIDATE_ROOTS_ID ?= validate-roots
@@ -206,7 +213,8 @@ tmpfile = $(dir $1).$(notdir $1)
   
   ENTAILMENTS = {
 	'ClassEntailments' => %w{ AllSubclass },
-	'PropertyEntailments' => %w{ InverseProperty AllSubproperty }
+	'PropertyEntailments' => %w{ InverseProperty AllSubproperty },
+	'IndividualEntailments' => %w{ AllInstance DataPropertyValue ObjectPropertyValue SameAs },
   }
 
   PATHS = {
@@ -477,19 +485,15 @@ endef
 # load-production
 #
 
-#
-# FUSEKI_ENDPOINT must be the URL of the Fuseki repository endpoint.
-# http://[host]:[port] or https://[host]:[port]
-#
 define do_load
   @echo load $(2) '->' $(1)
   @mkdir -p $(dir $@)
-  curl -v \
+  @$(CURL) $(CURL_OPTS) \
     -X PUT \
     -H "Content-Type: application/rdf+xml" \
-    -G '$(FUSEKI_ENDPOINT)/$(JENA_DATASET)/data' \
+    -G '$(FUSEKI_ENDPOINT)/data' \
     --data-urlencode graph='$(1)' \
-    -T '$(2)' && touch $@
+    -T '$(2)' > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 load-production:	load-ontologies-production
@@ -705,7 +709,7 @@ define do_close_tbox
   @echo closure artifact '->' $@
   @mkdir -p $(dir $@)
   $(CLOSE_BUNDLE) $(2) \
-    --name $(1) --uri $(2) \
+    --name $(1) --uri $(3) \
     --namespace '$(4)=>$(3)' \
     --namespace '$(6)=>$(5)' \
     $(7) \
