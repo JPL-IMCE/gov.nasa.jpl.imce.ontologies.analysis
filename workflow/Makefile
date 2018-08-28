@@ -51,6 +51,9 @@ $(WORKFLOW)/.symlinks:
 location-mapping: bootstrap $(WORKFLOW)/.symlinks
 	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} location-mapping)
 
+synthesized-bundles: bootstrap $(WORKFLOW)/.symlinks
+	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} synthesized-bundles)
+
 validate-roots: location-mapping
 	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} validate-roots)
 
