@@ -44,7 +44,7 @@ EXPORTED_VOCABULARIES_BUNDLE_STEM ?= exported-vocabularies
 EXPORTED_USER_MODELS_BUNDLE_STEM ?= exported-user-models
 
 EXTRACT ?= $(JRUBY_CMD) $(TOOLS_DIR)/extract-ontology
-EXTRACT_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+EXTRACT_OPTS ?= --host $(FUSEKI_HOST) --port $(FUSEKI_PORT) --dataset $(FUSEKI_DATASET)
 
 FUSEKI_S_DELETE ?= $(FUSEKI_BIN)/s-delete
 FUSEKI_S_GET ?= $(FUSEKI_BIN)/s-get
@@ -73,7 +73,7 @@ JRUBY_CMD ?= $(JRUBY) $(JRUBY_OPTS)
 JRUBY_OPTS ?= --headless -J-Xmx16384m -J-Djava.util.logging.config.file=logging.properties
 
 LOAD_REPO ?= $(TOOLS_DIR)/load-jena
-LOAD_REPO_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+LOAD_REPO_OPTS ?= --host $(FUSEKI_HOST) --port $(FUSEKI_PORT) --dataset $(FUSEKI_DATASET)
 
 LOCATION_MAPPING_FILE ?= location-mapping.yaml
 
@@ -90,9 +90,9 @@ REPORTS_TREE ?= $(REPORTS_TREE_PATH)
 REPORTS_TEST_FILE ?= $(REPORTS_DIR)/run-reports$(ZIP_SUFFIX)
 RUBY ?= $(JRUBY)
 RUN_AUDITS ?= $(JRUBY_CMD) $(TOOLS_DIR)/run-audits-jena
-RUN_AUDITS_OPTS ?= --info --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+RUN_AUDITS_OPTS ?= --info --host $(FUSEKI_HOST) --port $(FUSEKI_PORT) --dataset $(FUSEKI_DATASET)
 RUN_REPORTS ?= $(RUN_AUDITS)
-RUN_REPORTS_OPTS ?= --info --report --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+RUN_REPORTS_OPTS ?= --info --report --host $(FUSEKI_HOST) --port $(FUSEKI_PORT) --dataset $(FUSEKI_DATASET)
 
 SENTINELS_DIR ?= $(ARTIFACTS_DIR)/.sentinels
 
