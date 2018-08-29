@@ -484,7 +484,7 @@ endef
 define do_load
   @echo load $(2) '->' $(1)
   @mkdir -p $(dir $@)
-  @$(CURL) $(CURL_OPTS) \
+  $(CURL) $(CURL_OPTS) \
     -X PUT \
     -H "Content-Type: application/rdf+xml" \
     -G '$(FUSEKI_ENDPOINT)/$(FUSEKI_DATASET)/data' \
