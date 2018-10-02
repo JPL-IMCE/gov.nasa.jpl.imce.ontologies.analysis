@@ -223,37 +223,49 @@ tmpfile = $(dir $1).$(notdir $1)
 
   metadata = Hash.new { |h, k| h[k] = Set.new }
   iris_by_group = Hash.new { |h, k| h[k] = Set.new }
-  FileUtils.cd(ONTOLOGIES_DIR) do
-    PATHS.each do |group, path_hash|
-      path_hash.each do |search_path, prune_list|
-        Find.find(search_path) do |fp|
-	  Find.prune if prune_list.include?(fp)
-	  next unless File.file?(fp) && File.basename(fp) =~ /\.owl/
-	  File.open(fp) do |f|
-	    doc = REXML::Document.new(f)
+  begin
+    FileUtils.cd(ONTOLOGIES_DIR) do
+      PATHS.each do |group, path_hash|
+	path_hash.each do |search_path, prune_list|
+	  begin
+	    Find.find(search_path) do |fp|
+	      Find.prune if prune_list.include?(fp)
+	      next unless File.file?(fp) && File.basename(fp) =~ /\.owl/
+	      File.open(fp) do |f|
+		doc = REXML::Document.new(f)
 
-	    ontology = doc.root.get_elements('owl:Ontology').first
-	    raise "no ontology for #{fp}" unless ontology
-	    iri = ontology.attributes['rdf:about']
-	    iris_by_group[group] << iri
-	    raise "no iri for #{fp}" unless iri
-	    begin
-	      imports = ontology.get_elements('owl:imports').flat_map { |i| i.attributes['rdf:resource'] }
-	    rescue
-	      raise "error in imports for #{fp}"
+		ontology = doc.root.get_elements('owl:Ontology').first
+		raise "no ontology for #{fp}" unless ontology
+		iri = ontology.attributes['rdf:about']
+		iris_by_group[group] << iri
+		raise "no iri for #{fp}" unless iri
+		begin
+		  imports = ontology.get_elements('owl:imports').flat_map { |i| i.attributes['rdf:resource'] }
+		rescue
+		  raise "error in imports for #{fp}"
+		end
+
+		stem = "#{File.dirname(fp)}/#{File.basename(fp, '.owl')}"
+		metadata['nodes'] << { 'iri' => iri, 'stem' => stem }
+
+		imports.each do |imported|
+		  metadata['edges'] << { 'importing' => iri, 'imported' => imported }
+		end
+	      end
 	    end
-
-	    stem = "#{File.dirname(fp)}/#{File.basename(fp, '.owl')}"
-	    metadata['nodes'] << { 'iri' => iri, 'stem' => stem }
-
-	    imports.each do |imported|
-	      metadata['edges'] << { 'importing' => iri, 'imported' => imported }
-	    end
+	  rescue Errno::ENOENT
+	    raise "no search path #{search_path}"
 	  end
-        end
+	end
       end
     end
+  rescue Errno::ENOENT
+    raise "no ontologies directory #{ONTOLOGIES_DIR}"
   end
+
+  # Check for empty input.
+  
+  raise "no input ontologies found" if metadata['nodes'].empty?
   
   # Create graph structures.
 
