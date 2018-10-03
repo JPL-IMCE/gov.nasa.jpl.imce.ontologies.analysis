@@ -9,6 +9,8 @@
 #    All rights reserved.
 #
 
+<% require 'json' %>
+
 ARTIFACTS_DIR ?= <%= ARTIFACTS_DIR = ENV['ARTIFACTS_DIR'] || 'artifacts' %>
 AUDITS_DIR ?= tests/audits
 AUDITS_TREE ?= $(AUDITS_TREE_PATH)
@@ -38,9 +40,9 @@ EMPTY_IMPORTS_FILE ?= empty-imports.yaml
 ENTAILMENTS_DIR ?= $(ARTIFACTS_DIR)/entailments
 
                                                          # { path_to_scan1 => [ path_to_prune1, path_to_prune2, ... ], path_to_scan2 => [ ... ], ... }
-<% EXPORTED_VOCABULARIES = ENV['EXPORTED_VOCABULARIES'] || { 'europa.jpl.nasa.gov/efse/libraries' => [] } %>
+<% EXPORTED_VOCABULARIES = JSON.parse(ENV['EXPORTED_VOCABULARIES'] || { 'europa.jpl.nasa.gov/efse/libraries' => [] }.to_json) %>
 EXPORTED_VOCABULARIES_BUNDLE_STEM ?= exported-vocabularies
-<% EXPORTED_USER_MODELS = ENV['EXPORTED_USER_MODELS'] || { 'europa.jpl.nasa.gov' => [ 'europa.jpl.nasa.gov/efse/libraries' ] } %>
+<% EXPORTED_USER_MODELS = JSON.parse(ENV['EXPORTED_USER_MODELS'] || { 'europa.jpl.nasa.gov' => [ 'europa.jpl.nasa.gov/efse/libraries'  ]}.to_json) %>
 EXPORTED_USER_MODELS_BUNDLE_STEM ?= exported-user-models
 
 EXTRACT ?= $(JRUBY_CMD) $(TOOLS_DIR)/extract-ontology
@@ -62,7 +64,7 @@ GET_UNSAT_IRIS_OPTS ?=
 GET_UNSAT_ROOTS ?= $(TOOLS_DIR)/get-unsat-roots
 GET_UNSAT_ROOTS_OPTS ?= --info
 
-<% IMPORTED_VOCABULARIES = ENV['IMPORTED_VOCABULARIES'] || { 'imce.jpl.nasa.gov' => [], 'purl.org' => [] } %>
+<% IMPORTED_VOCABULARIES = JSON.parse(ENV['IMPORTED_VOCABULARIES'] || { 'imce.jpl.nasa.gov' => [], 'purl.org' => [] }.to_json) %>
 IMPORTED_VOCABULARIES_BUNDLE_STEM ?= imported-vocabularies
 
 IRI_TO_MDID ?= $(TOOLS_DIR)/iri-to-mdid
@@ -196,7 +198,6 @@ tmpfile = $(dir $1).$(notdir $1)
 
   require 'fileutils'
   require 'find'
-  require 'json'
   require 'jgrapht-core-0.9.0.jar'
   require 'rexml/document'
   require 'shellwords'
