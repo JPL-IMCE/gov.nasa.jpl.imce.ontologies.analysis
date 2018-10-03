@@ -1,0 +1,43 @@
+#!/bin/sh
+
+set -o errexit
+
+OML_IMPORT=$1
+
+CATALOG=oml.catalog.xml
+CONVERT=$HOME/Downloads/OMLConverters/bin/omlConverter
+INPUT=oml-input
+OUTPUT=ontologies
+
+IMCE=imce.jpl.nasa.gov
+OMG_ORG=www.omg.org
+
+OML_IMPORT_RESOURCES=$OML_IMPORT/resources
+PUBLIC_BUNDLES=$OML_IMPORT/bundles
+
+# run in analysis target/workflow/artifacts
+
+if [ $(expr "$PWD" : '.*target\/workflow\/artifacts$') -eq 0 ]
+then
+  echo "must run in .../target/workflow/artifacts" 1>&2
+  exit 1
+fi
+
+echo "# oml import resources: $OML_IMPORT_RESOURCES"
+echo "# public bundles: $PUBLIC_BUNDLES"
+
+# copy exported function list data
+
+rm -rf $INPUT
+mkdir $INPUT
+rsync -av $OML_IMPORT_RESOURCES $INPUT
+
+# convert OML to owl
+
+$CONVERT --version
+$CONVERT text $INPUT/resources/$CATALOG --output $OUTPUT --owl --clear
+
+# add cached project bundle
+
+rsync -av --exclude='**'$OMG_ORG'**' --exclude='**-embedding*' $PUBLIC_BUNDLES/ $OUTPUT/
+

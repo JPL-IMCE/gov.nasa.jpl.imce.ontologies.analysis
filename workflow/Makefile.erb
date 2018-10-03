@@ -9,41 +9,49 @@
 #    All rights reserved.
 #
 
-ARTIFACTS_DIR ?= artifacts
+<% require 'json' %>
+
+ARTIFACTS_DIR ?= <%= ARTIFACTS_DIR = ENV['ARTIFACTS_DIR'] || 'artifacts' %>
 AUDITS_DIR ?= tests/audits
-AUDITS_TREE ?= ../../data/Audit/export/caesar-demo
+AUDITS_TREE ?= $(AUDITS_TREE_PATH)
 AUDITS_TEST_FILE ?= $(AUDITS_DIR)/run-audits$(XML_SUFFIX)
 
-BACKBONE_DISJOINTS ?= Entity ReifiedObjectProperty ReifiedStructuredDataProperty StructuredDatatype
-BACKBONE_PREFIX ?= http://imce.jpl.nasa.gov/backbone/
+BACKBONE_PREFIX ?= http://imce.jpl.nasa.gov/backbone
+BACKBONE_ABSTRACT ?= Aspect
+BACKBONE_CONCRETE ?= Concept Entity ReifiedObjectProperty ReifiedStructuredDataProperty StructuredDatat
+BUNDLES_DIR ?= $(ARTIFACTS_DIR)/bundles
+BUNDLE_CLOSURE_STEM ?= export-bundle
 
-BUNDLE_CLOSURE_ABBREV = export-bundle
-BUNDLE_CLOSURE_BACKBONE_IRI = $(BACKBONE_PREFIX)imce.jpl.nasa.gov/project/$(BUNDLE_CLOSURE_ABBREV)
-BUNDLE_CLOSURE_BACKBONE_ABBREV = $(BUNDLE_CLOSURE_ABBREV)-backbone
-BUNDLE_CLOSURE_FILE = $(WORKFLOW)/artifacts/bundles/$(BUNDLE_CLOSURE_ABBREV)$(OWL_SUFFIX)
-BUNDLE_CLOSURE_IRI = http://imce.jpl.nasa.gov/project/$(BUNDLE_CLOSURE_ABBREV)
-BUNDLE_CLOSURE_FILE_IRI = file://$(BUNDLE_CLOSURE_FILE)
-BUNDLE_NAME = $(BUNDLE_CLOSURE_ABBREV)
-
-CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-bundle
-CLOSE_BUNDLE_OPTS ?= --export
+CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-tbox-bundle
+CLOSE_EXPORTED_USER_MODELS_BUNDLE_OPTS ?= --info --no-disjoints
+CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS ?= --info --excise '$(BACKBONE_PREFIX)' --backbone_iri '$(BACKBONE_PREFIX)' \
+		     --abstract '$(BACKBONE_ABSTRACT)' --concrete '$(BACKBONE_CONCRETE)'
+CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS ?= --info --no-disjoints
+CURL ?= curl
+CURL_OPTS ?= --silent
 
 DEPENDENCIES_FILE ?= .dependencies
 
 ENTAIL ?= $(JRUBY_CMD) $(TOOLS_DIR)/entail
-ENTAIL_OPTS = 
+ENTAIL_OPTS = --info --remove-backbone
 
 EMPTY_IMPORTS_FILE ?= empty-imports.yaml
 
 ENTAILMENTS_DIR ?= $(ARTIFACTS_DIR)/entailments
 
-EXTRACT ?= $(JRUBY_CMD) $(TOOLS_DIR)/extract-ontology
-EXTRACT_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+                                                         # { path_to_scan1 => [ path_to_prune1, path_to_prune2, ... ], path_to_scan2 => [ ... ], ... }
+<% EXPORTED_VOCABULARIES = JSON.parse(ENV['EXPORTED_VOCABULARIES'] || { 'europa.jpl.nasa.gov/efse/libraries' => [] }.to_json) %>
+EXPORTED_VOCABULARIES_BUNDLE_STEM ?= exported-vocabularies
+<% EXPORTED_USER_MODELS = JSON.parse(ENV['EXPORTED_USER_MODELS'] || { 'europa.jpl.nasa.gov' => [ 'europa.jpl.nasa.gov/efse/libraries'  ]}.to_json) %>
+EXPORTED_USER_MODELS_BUNDLE_STEM ?= exported-user-models
 
-FUSEKI_DIR ?= /opt/jena-fuseki-0.2.7
-FUSEKI_S_DELETE ?= $(FUSEKI_DIR)/s-delete
-FUSEKI_S_GET ?= $(FUSEKI_DIR)/s-get
-FUSEKI_S_PUT ?= $(FUSEKI_DIR)/s-put
+EXTRACT ?= $(JRUBY_CMD) $(TOOLS_DIR)/extract-ontology
+EXTRACT_OPTS ?= --host $(FUSEKI_HOST) --port $(FUSEKI_PORT) --dataset $(FUSEKI_DATASET)
+
+FUSEKI_S_DELETE ?= $(FUSEKI_BIN)/s-delete
+FUSEKI_S_GET ?= $(FUSEKI_BIN)/s-get
+FUSEKI_S_PUT ?= $(FUSEKI_BIN)/s-put
+FUSEKI_ENDPOINT ?= $(FUSEKI_PROTOCOL)//$(FUSEKI_HOST):$(FUSEKI_PORT)
 
 GET_UNSATS ?= $(TOOLS_DIR)/get-unsats
 GET_UNSAT_PROPS_OPTS ?= --get-props
@@ -54,58 +62,63 @@ GET_UNSAT_FUNC_PROPS_OPTS ?= --get-func-props
 GET_UNSAT_IRIS_OPTS ?= 
 
 GET_UNSAT_ROOTS ?= $(TOOLS_DIR)/get-unsat-roots
-GET_UNSAT_ROOTS_OPTS ?= 
+GET_UNSAT_ROOTS_OPTS ?= --info
+
+<% IMPORTED_VOCABULARIES = JSON.parse(ENV['IMPORTED_VOCABULARIES'] || { 'imce.jpl.nasa.gov' => [], 'purl.org' => [] }.to_json) %>
+IMPORTED_VOCABULARIES_BUNDLE_STEM ?= imported-vocabularies
 
 IRI_TO_MDID ?= $(TOOLS_DIR)/iri-to-mdid
-IRI_TO_MDID_OPTS ?= 
+IRI_TO_MDID_OPTS ?=
 
 JRUBY ?= jruby
 JRUBY_CMD ?= $(JRUBY) $(JRUBY_OPTS)
 JRUBY_OPTS ?= --headless -J-Xmx16384m -J-Djava.util.logging.config.file=logging.properties
 
 LOAD_REPO ?= $(TOOLS_DIR)/load-jena
-LOAD_REPO_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+LOAD_REPO_OPTS ?= --host $(FUSEKI_HOST) --port $(FUSEKI_PORT) --dataset $(FUSEKI_DATASET)
 
 LOCATION_MAPPING_FILE ?= location-mapping.yaml
 
 MAKE_MAKEFILE ?= $(TOOLS_DIR)/make-makefile
 
+OMG_ORG ?= <%= OMG_ORG = 'www.omg.org' %>
+ONTOLOGIES_DIR ?= <%= ONTOLOGIES_DIR = ENV['ONTOLOGIES_DIR'] || ARTIFACTS_DIR + '/ontologies' %>
 OWL_SUFFIX = .owl
 
-PROJECT_BUNDLE_IRI ?= <%= PROJECT_BUNDLE_IRI = 'http://imce.jpl.nasa.gov/foundation/project/project-bundle' %>
-
-PROVENANCE_FILE ?= $(ARTIFACTS_DIR)/OML2OTIProvenances.json
+PROJECT ?= europa-clipper
 
 REPORTS_DIR ?= $(ARTIFACTS_DIR)/reports
-REPORTS_TREE ?= ../data/Report/export/caesar-demo
+REPORTS_TREE ?= $(REPORTS_TREE_PATH)
 REPORTS_TEST_FILE ?= $(REPORTS_DIR)/run-reports$(ZIP_SUFFIX)
 RUBY ?= $(JRUBY)
 RUN_AUDITS ?= $(JRUBY_CMD) $(TOOLS_DIR)/run-audits-jena
-RUN_AUDITS_OPTS ?= --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
-RUN_REPORTS ?= $(JRUBY_CMD) $(TOOLS_DIR)/run-audits-jena
-RUN_REPORTS_OPTS ?= --report --host $(JENA_HOST) --port $(JENA_PORT) --dataset $(JENA_DATASET)
+RUN_AUDITS_OPTS ?= --info --host $(FUSEKI_HOST) --port $(FUSEKI_PORT) --dataset $(FUSEKI_DATASET)
+RUN_REPORTS ?= $(RUN_AUDITS)
+RUN_REPORTS_OPTS ?= --info --report --host $(FUSEKI_HOST) --port $(FUSEKI_PORT) --dataset $(FUSEKI_DATASET)
 
 SENTINELS_DIR ?= $(ARTIFACTS_DIR)/.sentinels
 
-TESTS_DIR ?= tests/consistency
-TOOLS_DIR ?= ../tools/tools
+TESTS_DIR ?= $(ARTIFACTS_DIR)/tests/consistency
+TOOLS_DIR ?= $(TOOLS)/tools
 
-UNSATS_REPORT_FILE ?= tests/consistency/unsats.csv
-UNSAT_PROPS_REPORT_FILE ?= tests/consistency/unsat-props.csv
-UNSAT_PROP_SOURCES_REPORT_FILE ?= tests/consistency/unsat-prop-sources.csv
-UNSAT_PROP_TARGETS_REPORT_FILE ?= tests/consistency/unsat-prop-targets.csv
-UNSAT_SUPS_REPORT_FILE ?= tests/consistency/unsat-sups.csv
-UNSAT_FUNC_PROPS_REPORT_FILE = tests/consistency/unsat-func-props.csv
+UNSATS_REPORT_FILE ?= $(TESTS_DIR)/unsats.csv
+UNSAT_PROPS_REPORT_FILE ?= $(TESTS_DIR)/unsat-props.csv
+UNSAT_PROP_SOURCES_REPORT_FILE ?= $(TESTS_DIR)/unsat-prop-sources.csv
+UNSAT_PROP_TARGETS_REPORT_FILE ?= $(TESTS_DIR)/unsat-prop-targets.csv
+UNSAT_SUPS_REPORT_FILE ?= $(TESTS_DIR)/unsat-sups.csv
+UNSAT_FUNC_PROPS_REPORT_FILE = $(TESTS_DIR)/unsat-func-props.csv
 
-UNSAT_ROOTS_REPORT_FILE = tests/consistency/unsat-roots.csv
+UNSAT_ROOTS_REPORT_FILE = $(TESTS_DIR)/unsat-roots.csv
 
 VALIDATE_OWL ?= $(JRUBY_CMD) -J-Djava.util.logging.config.file=logging.properties $(TOOLS_DIR)/validate-owl
-VALIDATE_OWL_OPTS ?= --satisfiability
+VALIDATE_OWL_OPTS ?= --info --satisfiability
 
 VALIDATE_ROOTS_TEST_FILE ?= $(TESTS_DIR)/validate-roots$(XML_SUFFIX)
 VALIDATE_ROOTS_ID ?= validate-roots
 
 VIEW_STEM ?= imce.jpl.nasa.gov/view/
+
+VOCABULARY_BUNDLE_IRI ?= <%= VOCABULARY_BUNDLE_IRI = 'http://imce.jpl.nasa.gov/discipline/fse/fse-bundle' %>
 
 XML_SUFFIX ?= .xml
 
@@ -122,10 +135,10 @@ tmpfile = $(dir $1).$(notdir $1)
 <%
 
   class OMFGraph
-    def initialize(iri, filename, provenance)
+    def initialize(iri, stem, o_dir)
       @iri = iri
-      @filename = filename
-      @provenance = provenance
+      @stem = stem
+      @o_dir = o_dir
     end
     def ontology_iri
       @iri
@@ -133,29 +146,61 @@ tmpfile = $(dir $1).$(notdir $1)
     def entailments_iri(type)
       "#{@iri}/#{type}"
     end
-    attr_reader :provenance
     def ontology_file
-      "#{ENV['PWD']}/$(ARTIFACTS_DIR)/#{@filename}$(OWL_SUFFIX)"
+      "#{@o_dir}/#{@stem}$(OWL_SUFFIX)"
     end
     def ontology_file_iri
       'file://' + ontology_file
     end
     def entailments_file(type)
-      "#{ENV['PWD']}/$(ENTAILMENTS_DIR)/#{@filename}/#{type}$(OWL_SUFFIX)"
+      "$(ENTAILMENTS_DIR)/#{@stem}/#{type}$(OWL_SUFFIX)"
     end
     def entailments_file_iri(type)
       'file://' + entailments_file(type)
     end
     def ontology_sentinel
-      "#{ENV['PWD']}/$(SENTINELS_DIR)/#{@filename}$(OWL_SUFFIX)"
+      "$(SENTINELS_DIR)/#{@stem}$(OWL_SUFFIX)"
     end
     def entailments_sentinel(type)
-      "#{ENV['PWD']}/$(SENTINELS_DIR)/#{@filename}/#{type}$(OWL_SUFFIX)"
+      "$(SENTINELS_DIR)/#{@stem}/#{type}$(OWL_SUFFIX)"
     end
   end
-  
-  require 'json'
+  class OMFOntologyGraph < OMFGraph
+    def initialize(iri, stem)
+      super(iri, stem, '$(ONTOLOGIES_DIR)')
+    end
+  end
+  class OMFBundleGraph < OMFGraph
+    def initialize(stem, project)
+      @stem = stem
+      @project = project
+      super(ontology_iri, stem, '$(BUNDLES_DIR)')
+    end
+    def ontology_iri
+      'http://' + path
+    end
+    def abbrev
+      @stem
+    end
+    def name
+      @stem
+    end
+    def path
+      "imce.jpl.nasa.gov/project/#{@project}/#{@stem}"
+    end
+    def backbone_iri
+      "$(BACKBONE_PREFIX)/#{path}"
+    end
+    def backbone_abbrev
+      @stem + '-backbone'
+    end
+  end
+
+  require 'fileutils'
+  require 'find'
   require 'jgrapht-core-0.9.0.jar'
+  require 'rexml/document'
+  require 'shellwords'
 
   java_import 'org.jgrapht.experimental.dag.DirectedAcyclicGraph'
   java_import 'org.jgrapht.graph.DefaultEdge'
@@ -165,71 +210,131 @@ tmpfile = $(dir $1).$(notdir $1)
   
   ENTAILMENTS = {
 	'ClassEntailments' => %w{ AllSubclass },
-	'PropertyEntailments' => %w{ InverseProperty AllSubproperty }
+	'PropertyEntailments' => %w{ InverseProperty AllSubproperty },
+	'IndividualEntailments' => %w{ AllInstance DataPropertyValue ObjectPropertyValue SameAs },
   }
+
+  PATHS = {
+  	'exported_vocabularies' => EXPORTED_VOCABULARIES,
+	'exported_user_models' => EXPORTED_USER_MODELS,
+	'imported_vocabularies' => IMPORTED_VOCABULARIES,
+  }
+	
+  # Traverse ontologies and mine metadata.
+
+  metadata = Hash.new { |h, k| h[k] = Set.new }
+  iris_by_group = Hash.new { |h, k| h[k] = Set.new }
+  begin
+    FileUtils.cd(ONTOLOGIES_DIR) do
+      PATHS.each do |group, path_hash|
+	path_hash.each do |search_path, prune_list|
+	  begin
+	    Find.find(search_path) do |fp|
+	      Find.prune if prune_list.include?(fp)
+	      next unless File.file?(fp) && File.basename(fp) =~ /\.owl/
+	      File.open(fp) do |f|
+		doc = REXML::Document.new(f)
+
+		ontology = doc.root.get_elements('owl:Ontology').first
+		raise "no ontology for #{fp}" unless ontology
+		iri = ontology.attributes['rdf:about']
+		iris_by_group[group] << iri
+		raise "no iri for #{fp}" unless iri
+		begin
+		  imports = ontology.get_elements('owl:imports').flat_map { |i| i.attributes['rdf:resource'] }
+		rescue
+		  raise "error in imports for #{fp}"
+		end
+
+		stem = "#{File.dirname(fp)}/#{File.basename(fp, '.owl')}"
+		metadata['nodes'] << { 'iri' => iri, 'stem' => stem }
+
+		imports.each do |imported|
+		  metadata['edges'] << { 'importing' => iri, 'imported' => imported }
+		end
+	      end
+	    end
+	  rescue Errno::ENOENT
+	    raise "no search path #{search_path}"
+	  end
+	end
+      end
+    end
+  rescue Errno::ENOENT
+    raise "no ontologies directory #{ONTOLOGIES_DIR}"
+  end
+
+  # Check for empty input.
   
-  # Load metadata ontology.
-  
-  m_name = ENV['METADATA']
-  m_file = File.open(m_name)
-  raise "couldn't open metadata ontology #{m_name}" unless m_file
-  metadata = JSON.parse(m_file.read)
-  raise "couldn't load metadata ontology" unless metadata
-  i = 'http://imce.jpl.nasa.gov/oml/oml'
-  f = 'imce.jpl.nasa.gov/oml/oml_Gro'
-  p = 'OMLBundleModuleProvenance'
-  metadata['nodes'] << { 'iri' => i, 'filename' => f, 'provenance' => p } # workaround
-  metadata['edges'] << { 'importing' => 'http://imce.jpl.nasa.gov/foundation/annotation/annotation', 'imported' => i } # workaround
+  raise "no input ontologies found" if metadata['nodes'].empty?
   
   # Create graph structures.
 
   graphs = metadata['nodes'].inject({}) do |m, n|
-    m[n['iri']] = OMFGraph.new(n['iri'], n['filename'], n['provenance'])
+    m[n['iri']] = OMFOntologyGraph.new(n['iri'], n['stem'])
     m
   end
+
+  # Add graph for exported user models bundle.
   
-  # Find exported terminology graphs.
+  exported_user_models_bundle_graph = OMFBundleGraph.new('$(EXPORTED_USER_MODELS_BUNDLE_STEM)', '$(PROJECT)')
+  graphs[exported_user_models_bundle_graph.ontology_iri] = exported_user_models_bundle_graph
+
+  # Add graph for exported vocabularies bundle.
   
-  exported_graphs = graphs.values.select do |g|
-    g.provenance == 'OMLExtensionModuleProvenance' ||
-      g.provenance == 'OMLOtherModuleProvenance'
-  end
-  warn "#{exported_graphs.length} exported graphs"
- 
-  # Find imported terminology graphs.
+  exported_vocabularies_bundle_graph = OMFBundleGraph.new('$(EXPORTED_VOCABULARIES_BUNDLE_STEM)', '$(PROJECT)')
+  graphs[exported_vocabularies_bundle_graph.ontology_iri] = exported_vocabularies_bundle_graph
+
+  # Add graph for imported vocabularies bundle.
   
-  imported_graphs = graphs.values.select do |g|
-    g.provenance == 'OMLBundleModuleProvenance'
-  end
-  warn "#{imported_graphs.length} imported graphs"
- 
-  # Set file prefixes and suffixes.
-  
-  all_graphs = exported_graphs + imported_graphs
-    
+  imported_vocabularies_bundle_graph = OMFBundleGraph.new('$(IMPORTED_VOCABULARIES_BUNDLE_STEM)', '$(PROJECT)')
+  graphs[imported_vocabularies_bundle_graph.ontology_iri] = imported_vocabularies_bundle_graph
+
   # Create location mapping.
   
   location_map = graphs.values.inject({}) do |m, g|
     m[g.ontology_iri] = g.ontology_file_iri
-    ENTAILMENTS.keys.each do |k|
-      m[g.entailments_iri(k)] = g.entailments_file_iri(k)
-    end
     m
   end
-  location_map['$(BUNDLE_CLOSURE_IRI)'] = '$(BUNDLE_CLOSURE_FILE_IRI)'
   								
-  # Create imports graph.
+  # Create imports graph. Omit back edges; processing does not rely on acyclicity at present.
   
   imports_graph = metadata['edges'].inject(DirectedAcyclicGraph.new(DefaultEdge)) do |memo, edge|
     importing = graphs[edge['importing']]
+    raise "no importing graph for #{edge['importing']}" unless importing
     imported = graphs[edge['imported']]
-    unless imported.provenance == 'OMLBuiltinModuleProvenance'
-      memo.addVertex(importing)						  
-      memo.addVertex(imported)
+    raise "no imported graph for #{edge['imported']}" unless imported
+    memo.addVertex(importing)
+    memo.addVertex(imported)
+    begin
       memo.addEdge(importing, imported)
+    rescue Java::JavaLang::IllegalArgumentException
+      warn "back edge omitted"
     end
     memo
   end
+
+  # Create imports relationships for synthesized bundles.
+
+  {
+    exported_user_models_bundle_graph => iris_by_group['exported_user_models'],
+    exported_vocabularies_bundle_graph => iris_by_group['exported_vocabularies'],
+    imported_vocabularies_bundle_graph => iris_by_group['imported_vocabularies'],
+  }.each do |graph, iris|
+    raise "bad vertex #{graph.inspect}" unless OMFBundleGraph === graph
+    imports_graph.addVertex(graph)
+    iris.each do |iri|
+      g = graphs[iri]
+      raise "bad edge target #{g.inspect}" unless OMFGraph === g
+      imports_graph.addVertex(g)
+      imports_graph.addEdge(graph, g)
+    end
+  end
+  imports_graph.addEdge(exported_user_models_bundle_graph, exported_vocabularies_bundle_graph)
+  imports_graph.addEdge(exported_vocabularies_bundle_graph, imported_vocabularies_bundle_graph)
+  
+  # Form transitive closure of imports_graph.
+  
   TransitiveClosure::INSTANCE.closeSimpleDirectedGraph(imports_graph)
 												      
   # Create imports map.
@@ -238,48 +343,88 @@ tmpfile = $(dir $1).$(notdir $1)
   iter = imports_graph.iterator
   while iter.hasNext
     source = iter.next
+    raise "bad source #{source.inspect}" unless OMFGraph === source
     imports_map[source] = imports_graph.edgesOf(source).map do |e|
       imports_graph.getEdgeTarget(e)
     end.reject do |target|
       target == source
     end
+    bad = imports_map[source].reject { |i| OMFGraph === i }
+    raise "bad imports for #{source.ontology_iri}: #{bad.inspect}" unless bad.empty?
   end
 
-  # Find root nodes of imports graph that correspond to exported packages.
+  # Create rule for creating synthesized bundles.
+
+  synthesized_bundles_rule = Makefile::Rule.new('synthesized-bundles')
+  synthesized_bundles_rule.prereqs += [
+    exported_user_models_bundle_graph,
+    exported_vocabularies_bundle_graph,
+    imported_vocabularies_bundle_graph,
+  ].map { |g| g.ontology_file }
   
-  root_nodes = imports_graph.vertexSet.select do |node|
-    imports_graph.inDegreeOf(node) == 0 &&
-    exported_graphs.include?(node)
-  end
-
-  # Create rules for creating bundle closure.
+  # Create rules for creating exported user models bundle closure.
  
-  bundle_closure_file_rule = Makefile::Rule.new('$(BUNDLE_CLOSURE_FILE)')
+  exported_user_models_bundle_file_rule = Makefile::Rule.new(exported_user_models_bundle_graph.ontology_file)
   
-  iris = Set.new
-  files = Set.new
-  root_nodes.each do |n|
-    iris << n.ontology_iri
-    iris += imports_map[n].map { |o| o.ontology_iri }
-    files << n.ontology_file
-    files += imports_map[n].map { |o| o.ontology_file }
+  iris = []
+  files = []
+  imports_map[exported_user_models_bundle_graph].each do |gl|
+    iris << gl.ontology_iri
+    files << gl.ontology_file
   end
-  bundle_closure_file_rule.prereqs += files 
-  bundle_closure_file_rule.cmds << "$(call do_closure,$(BUNDLE_NAME),$(BUNDLE_CLOSURE_IRI),$(BUNDLE_CLOSURE_ABBREV),$(BUNDLE_CLOSURE_BACKBONE_IRI),$(BUNDLE_CLOSURE_BACKBONE_ABBREV),#{iris.to_a.join(' ')})"
   
+  exported_user_models_bundle_file_rule.prereqs += files 
+  exported_user_models_bundle_file_rule.cmds << "$(call do_close_tbox,#{exported_user_models_bundle_graph.name}," +
+  			           "$(CLOSE_EXPORTED_USER_MODELS_BUNDLE_OPTS),#{exported_user_models_bundle_graph.ontology_iri}," +
+                                   "#{exported_user_models_bundle_graph.abbrev},#{exported_user_models_bundle_graph.backbone_iri}," +
+				   "#{exported_user_models_bundle_graph.backbone_abbrev},#{iris.join(' ')})"
+
+  # Create rules for creating exported user models bundle closure.
+ 
+  exported_vocabularies_bundle_file_rule = Makefile::Rule.new(exported_vocabularies_bundle_graph.ontology_file)
+  
+  iris = []
+  files = []
+  imports_map[exported_vocabularies_bundle_graph].each do |gl|
+    iris << gl.ontology_iri
+    files << gl.ontology_file
+  end
+  
+  exported_vocabularies_bundle_file_rule.prereqs += files 
+  exported_vocabularies_bundle_file_rule.cmds << "$(call do_close_tbox,#{exported_vocabularies_bundle_graph.name}," +
+  			           "$(CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS),#{exported_vocabularies_bundle_graph.ontology_iri}," +
+                                   "#{exported_vocabularies_bundle_graph.abbrev},#{exported_vocabularies_bundle_graph.backbone_iri}," +
+				   "#{exported_vocabularies_bundle_graph.backbone_abbrev},#{iris.join(' ')})"
+
+  # Create rules for creating imported user models bundle closure.
+ 
+  imported_vocabularies_bundle_file_rule = Makefile::Rule.new(imported_vocabularies_bundle_graph.ontology_file)
+  
+  iris = []
+  files = []
+  imports_map[imported_vocabularies_bundle_graph].each do |gl|
+    iris << gl.ontology_iri
+    files << gl.ontology_file
+  end
+  
+  imported_vocabularies_bundle_file_rule.prereqs += files 
+  imported_vocabularies_bundle_file_rule.cmds << "$(call do_close_tbox,#{imported_vocabularies_bundle_graph.name}," +
+  			           "$(CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS),#{imported_vocabularies_bundle_graph.ontology_iri}," +
+                                   "#{imported_vocabularies_bundle_graph.abbrev},#{imported_vocabularies_bundle_graph.backbone_iri}," +
+				   "#{imported_vocabularies_bundle_graph.backbone_abbrev},#{iris.join(' ')})"
+
   # Create rules for validating root ontologies.
  
   validate_roots_test_file_rule = Makefile::Rule.new('$(VALIDATE_ROOTS_TEST_FILE)')
-  validate_roots_test_file_rule.prereqs << '$(BUNDLE_CLOSURE_FILE)'
-  validate_roots_test_file_rule.cmds << "$(call validate_roots,$(VALIDATE_ROOTS_ID),$(BUNDLE_CLOSURE_IRI))"
+  validate_roots_test_file_rule.prereqs << exported_user_models_bundle_graph.ontology_file
+  validate_roots_test_file_rule.cmds << "$(call validate_roots,$(VALIDATE_ROOTS_ID),#{exported_user_models_bundle_graph.ontology_iri})"
   
   # Create rules for calculating entailments.
   
   entailments_top_rule = Makefile::Rule.new('entailments')
   entailments_rules = [entailments_top_rule]
   ENTAILMENTS.each do |type, data|
-    exported_graphs.each do |o|
-      il = imports_map[o]
+    [exported_user_models_bundle_graph].each do |o|
       input_iri = o.ontology_iri
       output_iri = o.entailments_iri(type)
       target = o.entailments_file(type)
@@ -287,12 +432,6 @@ tmpfile = $(dir $1).$(notdir $1)
       rule = Makefile::Rule.new(target)
       rule.prereqs << o.ontology_file
       entailments_rules << rule
-      il.each do |i|
-        rule.prereqs << i.ontology_file
-        unless i.ontology_iri == PROJECT_BUNDLE_IRI
-          rule.prereqs << i.entailments_file(type)
-        end
-      end
       rule.cmds << %Q{$(call do_entailments,#{input_iri},#{output_iri},"#{data.join(' ')}")}
     end
   end
@@ -320,32 +459,6 @@ location-mapping: $(LOCATION_MAPPING_FILE)
 %>
 
 #
-# rules to extract imported ontologies
-#
-
-define do_extract
-  @echo extract '->' $@
-  @mkdir -p $(dir $@) $(dir $(2))
-  @$(EXTRACT) $(EXTRACT_OPTS) $(1) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
-  @> $(2)
-endef
-
-<%=
-  rules = []
-  imported_graphs.each do |g|
-    rules << (rule = Makefile::Rule.new(g.ontology_file))
-    rule.cmds << "$(call do_extract,#{g.ontology_iri},#{g.ontology_sentinel})"
-    unless g.ontology_iri == PROJECT_BUNDLE_IRI
-      ENTAILMENTS.keys.each do |t|
-        rules << (rule = Makefile::Rule.new(g.entailments_file(t)))
-        rule.cmds << "$(call do_extract,#{g.entailments_iri(t)},#{g.entailments_sentinel(t)})"
-      end
-    end
-  end
-  rules.join("\n")
-%>
-
-#
 # validate-roots
 #
 
@@ -370,7 +483,9 @@ validate-roots:	$(VALIDATE_ROOTS_TEST_FILE)
 define do_entailments
   @echo entail '->' $@
   @mkdir -p $(dir $@)
-  @$(ENTAIL) $(ENTAIL_OPTS) --input-iri $(1) --output-iri $(2) --types $(3) $(4) $^ > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  @$(ENTAIL) $(ENTAIL_OPTS) \
+  	     $$(test $$(grep '<failure' $(VALIDATE_ROOTS_TEST_FILE) | wc -l) -gt 0 && echo '--vacuous') \
+  	     --input-iri $(1) --output-iri $(2) --types $(3) $(4) $^ > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 <%= entailments_rules.map { |r| r.to_s }.join("\n") %>
@@ -379,11 +494,15 @@ endef
 # load-production
 #
 
-
 define do_load
-  @echo load $(5) '->' $(2) $(4)
+  @echo load $(2) '->' $(1)
   @mkdir -p $(dir $@)
-  @$(JRUBY_CMD) $(LOAD_REPO) $(LOAD_REPO_OPTS) --uri '$(1)' '$(2)' && touch $@
+  $(CURL) $(CURL_OPTS) \
+    -X PUT \
+    -H "Content-Type: application/rdf+xml" \
+    -G '$(FUSEKI_ENDPOINT)/$(FUSEKI_DATASET)/data' \
+    --data-urlencode graph='$(1)' \
+    -T '$(2)' > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 load-production:	load-ontologies-production
@@ -409,14 +528,12 @@ load-production:	load-entailments-production
 <%=
   rule = Rule.new('load-entailments-production')
   graph_rules = []
-  imports_map.keys.each do |g|
-    unless g.ontology_iri == PROJECT_BUNDLE_IRI
-      ENTAILMENTS.keys.each do |type|
-        rule.prereqs << g.entailments_sentinel(type)
-        graph_rules << graph_rule = Rule.new(g.entailments_sentinel(type))
-        graph_rule.prereqs << g.entailments_file(type)
-        graph_rule.cmds << "$(call do_load,#{g.entailments_iri(type)},#{g.entailments_file(type)})"
-      end
+  [exported_user_models_bundle_graph].each do |g|
+    ENTAILMENTS.keys.each do |type|
+      rule.prereqs << g.entailments_sentinel(type)
+      graph_rules << graph_rule = Rule.new(g.entailments_sentinel(type))
+      graph_rule.prereqs << g.entailments_file(type)
+      graph_rule.cmds << "$(call do_load,#{g.entailments_iri(type)},#{g.entailments_file(type)})"
     end
   end
   rule.to_s + graph_rules.join
@@ -438,19 +555,11 @@ endef
 
 <%=
   rule = Rule.new('$(AUDITS_TEST_FILE)')
-  iris = []
-  exported_graphs.each do |g|
-    iris << g.ontology_iri
-    rule.prereqs << g.ontology_sentinel
-    rule.prereqs += imports_map[g].map { |i| i.ontology_sentinel }
-    unless g.ontology_iri == PROJECT_BUNDLE_IRI
-      ENTAILMENTS.keys.each do |type|
-        rule.prereqs << g.entailments_sentinel(type)
-        rule.prereqs += imports_map[g].reject { |i| i.ontology_iri == PROJECT_BUNDLE_IRI}.map { |i| i.entailments_sentinel(type) }
-      end
-    end
-  end
-  rule.cmds << "$(call do_audit,--audit-tree $(AUDITS_TREE),#{iris.join(' ')})"
+  iris = iris_by_group['exported_user_models'] + [ exported_user_models_bundle_graph.ontology_iri ]
+  rule.prereqs << exported_user_models_bundle_graph.ontology_sentinel
+  rule.prereqs += imports_map[exported_user_models_bundle_graph].map { |i| i.ontology_sentinel }
+  rule.prereqs += ENTAILMENTS.keys.map { |type| exported_user_models_bundle_graph.entailments_sentinel(type) }
+  rule.cmds << "$(call do_audit,--audit-tree $(AUDITS_TREE),#{iris.to_a.join(' ')})"
   rule
 %>
 
@@ -470,17 +579,11 @@ endef
 
 <%=
   rule = Rule.new('$(REPORTS_TEST_FILE)')
-  iris = []
-  exported_graphs.each do |g|
-    iris << g.ontology_iri
-    rule.prereqs << g.ontology_sentinel
-    rule.prereqs += imports_map[g].map { |i| i.ontology_sentinel }
-    ENTAILMENTS.keys.each do |type|
-      rule.prereqs << g.entailments_sentinel(type)
-      rule.prereqs += imports_map[g].reject { |i| i.ontology_iri == PROJECT_BUNDLE_IRI}.map { |i| i.entailments_sentinel(type) }
-    end
-  end
-  rule.cmds << "$(call do_report,--audit-tree $(REPORTS_TREE),#{iris.join(' ')})"
+  iris = iris_by_group['exported_user_models'] + [ exported_user_models_bundle_graph.ontology_iri ]
+  rule.prereqs << exported_user_models_bundle_graph.ontology_sentinel
+  rule.prereqs += imports_map[exported_user_models_bundle_graph].map { |i| i.ontology_sentinel }
+  rule.prereqs += ENTAILMENTS.keys.map { |type| exported_user_models_bundle_graph.entailments_sentinel(type) }
+  rule.cmds << "$(call do_report,--audit-tree $(REPORTS_TREE),#{iris.to_a.join(' ')})"
   rule
 %>
 
@@ -492,9 +595,8 @@ endef
 
 define do_identify_unsats
   @echo identify-unsats '->' $@
-  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_IRIS_OPTS) $< | \
-  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['OWL_METADATA'] %> \
-  	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_IRIS_OPTS) $< \
+  	> $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 identify-unsats: $(UNSATS_REPORT_FILE)
@@ -510,9 +612,8 @@ $(UNSATS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 
 define do_identify_unsat_props
   @echo identify-unsat-props '->' $@
-  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_PROPS_OPTS) $< | \
-  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['OWL_METADATA'] %> \
-  	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_PROPS_OPTS) $< \
+  	> $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 identify-unsat-props: $(UNSAT_PROPS_REPORT_FILE)
@@ -528,9 +629,8 @@ $(UNSAT_PROPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 
 define do_identify_unsat_prop_sources
   @echo identify-unsat-prop-sources '->' $@
-  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_PROP_SOURCES_OPTS) $< | \
-  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['OWL_METADATA'] %> \
-  	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_PROP_SOURCES_OPTS) $< \
+  	> $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 identify-unsat-prop-sources: $(UNSAT_PROP_SOURCES_REPORT_FILE)
@@ -546,9 +646,8 @@ $(UNSAT_PROP_SOURCES_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 
 define do_identify_unsat_prop_targets
   @echo identify-unsat-prop-targets '->' $@
-  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_PROP_TARGETS_OPTS) $< | \
-  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['OWL_METADATA'] %> \
-  	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_PROP_TARGETS_OPTS) $< \
+  	> $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 identify-unsat-prop-targets: $(UNSAT_PROP_TARGETS_REPORT_FILE)
@@ -564,9 +663,8 @@ $(UNSAT_PROP_TARGETS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 
 define do_identify_unsat_sups
   @echo identify-unsat-sups '->' $@
-  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_SUPS_OPTS) $< | \
-  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['OWL_METADATA'] %> \
-  	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_SUPS_OPTS) $< \
+  	> $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 identify-unsat-sups: $(UNSAT_SUPS_REPORT_FILE)
@@ -582,9 +680,8 @@ $(UNSAT_SUPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 
 define do_identify_unsat_roots
   @echo identify-unsat-roots '->' $@
-  @$(JRUBY_CMD) $(GET_UNSAT_ROOTS) $(GET_UNSAT_ROOTS_OPTS) $< | \
-  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['OWL_METADATA'] %> \
-  	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  @$(JRUBY_CMD) $(GET_UNSAT_ROOTS) $(GET_UNSAT_ROOTS_OPTS) $< \
+  	> $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 identify-unsat-roots: $(UNSAT_ROOTS_REPORT_FILE)
@@ -600,9 +697,8 @@ $(UNSAT_ROOTS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 
 define do_identify_unsat_func_props
   @echo identify-unsat-func-props '->' $@
-  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_FUNC_PROPS_OPTS) $< | \
-  	$(JRUBY_CMD) $(IRI_TO_MDID) $(IRI_TO_MDID_OPTS) --metadata <%= ENV['OWL_METADATA'] %> \
-  	--provenance $(PROVENANCE_FILE) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  @$(JRUBY_CMD) $(GET_UNSATS) $(GET_UNSAT_FUNC_PROPS_OPTS) $< \
+  	> $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
 identify-unsat-func-props: $(UNSAT_FUNC_PROPS_REPORT_FILE)
@@ -610,27 +706,37 @@ identify-unsat-func-props: $(UNSAT_FUNC_PROPS_REPORT_FILE)
 $(UNSAT_FUNC_PROPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 	$(call do_identify_unsat_func_props)
 	
-.PHONY:	closure-artifacts
+#
+# synthesized-bundles
+#
 
-define do_closure
+.PHONY: synthesized-bundles
+
+<%= synthesized_bundles_rule %>
+
+define do_close_tbox
   @echo closure artifact '->' $@
   @mkdir -p $(dir $@)
-  @$(CLOSE_BUNDLE) $(CLOSE_BUNDLE_OPTS) \
-    --namespace '$(3) => $(2)' \
-    --namespace '$(5) => $(4)' \
-    --name $(1) --uri $(2) --backbone-disjoints "$(BACKBONE_DISJOINTS)" \
-    --backbone-prefix $(BACKBONE_PREFIX) \
-    $(6) > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  $(CLOSE_BUNDLE) $(2) \
+    --name $(1) --uri $(3) \
+    --namespace '$(4)=>$(3)' \
+    --namespace '$(6)=>$(5)' \
+    $(7) \
+    > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
 endef
 
-<%= bundle_closure_file_rule %>
+<%= exported_user_models_bundle_file_rule %>
+
+<%= exported_vocabularies_bundle_file_rule %>
+
+<%= imported_vocabularies_bundle_file_rule %>
 
 #
 # Makefile
 #
 
-Makefile: Makefile.erb <%= ENV['METADATA'] %>
-	@make -f Makefile.bootstrap $@ METADATA=<%= ENV['METADATA'] %>
+Makefile: Makefile.erb
+	@make -f Makefile.bootstrap $@ ONTOLOGIES_DIR="<%= ENV['ONTOLOGIES_DIR'] %>"
 
 #
 # clean

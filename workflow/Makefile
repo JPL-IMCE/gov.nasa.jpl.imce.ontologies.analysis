@@ -51,6 +51,9 @@ $(WORKFLOW)/.symlinks:
 location-mapping: bootstrap $(WORKFLOW)/.symlinks
 	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} location-mapping)
 
+synthesized-bundles: bootstrap $(WORKFLOW)/.symlinks
+	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} synthesized-bundles)
+
 validate-roots: location-mapping
 	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} validate-roots)
 
@@ -75,5 +78,14 @@ identify-unsat-roots: validate-roots
 identify-unsat-func-props: validate-roots
 	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} identify-unsat-func-props)
 
+load-production: 
+	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} load-production)
+
+entailments:
+	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} entailments)
+
 run-audits: location-mapping
 	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} run-audits)
+
+run-reports: location-mapping
+	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} run-reports)

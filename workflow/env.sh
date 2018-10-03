@@ -1,5 +1,22 @@
 #!/bin/bash
 
+unset fuseki_protocol fuseki_host fuseki_port fuseki_dataset
+while test $# -gt 0
+do
+    case $1 in
+	--fuseki-protocol)      fuseki_protocol=$2;;
+	--fuseki-host)          fuseki_host=$2;;
+	--fuseki-port)          fuseki_port=$2;;
+	--fuseki-dataset)       fuseki_dataset=$2;;
+    esac
+    shift; shift
+done
+
+export FUSEKI_PROTOCOL=${fuseki_protocol:-http:}
+export FUSEKI_HOST=${fuseki_host:-localhost}
+export FUSEKI_PORT=${fuseki_port:-8898}
+export FUSEKI_DATASET=${fuseki_dataset:-europa-efse}
+
 # Read-only
 export ETC=$(dirname $(pwd))/etc
 
@@ -7,12 +24,17 @@ export ETC=$(dirname $(pwd))/etc
 export WORKFLOW_SOURCES=$(dirname $(pwd))/workflow
 
 # Read-only
-export ONTOLOGIES=$(dirname $(pwd))/target/ontologies
+export BUNDLES_DIR=$(dirname $(pwd))/target/workflow/artifacts/bundles
 
 # Read-only
-export FUSEKI_HOME=$(dirname $(pwd))/target/fuseki
+export ONTOLOGIES_DIR=$(dirname $(pwd))/target/workflow/artifacts/ontologies
+
+# Read-only
+FUSEKI_PROJ="$(dirname $(dirname "$(pwd)"))/gov.nasa.jpl.imce.ontologies.fuseki"
+export FUSEKI_HOME="$FUSEKI_PROJ/target/fuseki"
 
 export FUSEKI_BIN="${FUSEKI_HOME}/bin"
+#export FUSEKI_BIN="/opt/local/apache-jena-fuseki-3.6.0/bin"
 
 # Read-only
 export TOOLS=$(dirname $(pwd))/target/tools
@@ -28,7 +50,8 @@ export FUSEKI_BASE=$(dirname $(pwd))/target/run
 [ ! -d $WORKFLOW/artifacts ] && mkdir -p $WORKFLOW/artifacts
 
 export RUBYLIB=$TOOLS/lib/Application:\
-$TOOLS/lib/Audit:\
+$tools/lib/Audit:\
+$TOOLS/lib/BundleClosure:\
 $TOOLS/lib/IMCE:\
 $TOOLS/lib/Jena:\
 $TOOLS/lib/Makefile:\
@@ -45,17 +68,24 @@ $TOOLS/lib/OMFMetadata
 # && exit -1
 
 [ -z "$JRUBY" ] && export JRUBY=$(which jruby)
-echo "# JRUBY=$JRUBY"
 
 export GEM_PATH="${GEM_HOME}:$(dirname $(pwd))"
 
 export PARALLEL_MAKE_OPTS="-j8 -l16"
 
-export JENA_DATASET="imce-ontologies"
-
-export JENA_HOST="localhost"
-
-export JENA_PORT="8898"
+export FUSEKI_ENDPOINT=$FUSEKI_PROTOCOL//$FUSEKI_HOST:$FUSEKI_PORT/$FUSEKI_DATASET
 
 # Add as maven dependency
 export DOCBOOK_XHTML_XSL="${TOOLS}/docbook/xhtml/docbook.xsl"
+
+AUDITS_TREE_PATH=$(dirname $(pwd))/data/Audit/export/caesar-demo
+if [ $# -gt 2 ] && [ $3 != 'undefined' ]; then
+   AUDITS_TREE_PATH="$3"
+fi
+export AUDITS_TREE_PATH
+
+REPORTS_TREE_PATH=$(dirname $(pwd))/data/Report/export/caesar-demo
+if [ $# -gt 3 ] && [ $4 != 'undefined' ]; then
+    REPORTS_TREE_PATH="$4"
+fi
+export REPORTS_TREE_PATH

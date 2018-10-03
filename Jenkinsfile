@@ -1,56 +1,139 @@
 #!/usr/bin/env groovy
 
+def FUSEKI_DATASET_NAME=''
+
 pipeline {
-    agent any
+    /* Agent directive is required. */
+    agent { node { label 'imce-infr-dev-01.jpl.nasa.gov' } } 
 
     parameters {
-        string(name: 'ONT_METADATA', defaultValue: '../../exporter-results/exportedOMFMetadata.owl', description: 'Ontology metadata file location. Should probably be moved into the build.sbt script and derived from input.')
+        /* What to perform during build */
+        string(name: 'BOOTSTRAP_BUILDS_STEP', defaultValue: 'TRUE', description: 'Whether or not to bootstrap subsequent builds and calculate dependencies. It makes no sense to skip this step.')
+        string(name: 'VALIDATE_ROOTS_STEP', defaultValue: 'TRUE', description: 'Whether or not to validate ontologies.')
+        string(name: 'LOAD_PRODUCTION_STEP', defaultValue: 'TRUE', description: 'Whether or not to load data. This calculate entailments and load data to fuseki.')
+        string(name: 'RUN_REPORTS_STEP', defaultValue: 'TRUE', description: 'Whether or not to run reports.')
+
+        string(name: 'OML_REPO', defaultValue: 'gov.nasa.jpl.imce.caesar.workflows.europa', description: 'Repository where OML data to be converted is stored.')
+        string(name: 'OML_REPO_BRANCH', defaultValue: 'user-model/generated/efse/europa', description: 'Repository branch where OML data version to be converted is stored.')
+
+        string(name: 'FUSEKI_PORT_NUMBER', defaultValue: '3030', description: 'Port number of the Fuseki database.')
+        string(name: 'AUDITS_TREE_PATH', defaultValue: 'undefined', description: 'Custom auditing data path.')
+        string(name: 'REPORTS_TREE_PATH', defaultValue: 'undefined', description: 'Custom reporting data path.')
+    }
+
+    environment {
+        GEM_HOME = '/home/jenkins/.rvm/gems/jruby-1.7.19'
+        PATH = '$PATH:/home/jenkins/.rvm/gems/jruby-1.7.19/bin:/home/jenkins/.rvm/gems/jruby-1.7.19@global/bin:/home/jenkins/.rvm/rubies/jruby-1.7.19/bin:/usr/lib64/qt-3.3/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/jenkins/.rvm/bin'
+        SBT_OPTIONS = '-batch -no-colors'
+        VNC_OUT = './vnc.out'
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                echo "Checking out project from SCM..."
-
-                checkout scm
-            }
-        }
 
         stage('Setup') {
             steps {
                 echo "Setting up environment..."
 
-                sh "cd workflow; . env.sh; /usr/bin/make clean"
+                script {
+                    currentBuild.displayName = "${OML_REPO_BRANCH}"
+                    currentBuild.description = "Analyzing ${OML_REPO} branch ${OML_REPO_BRANCH}"
+                }
 
-                sh "${tool name: 'default-sbt', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt setupTools setupExportResults"
-                sh ". workflow/env.sh"
+                sh "env"
+                sh "sbt $SBT_OPTIONS clean cleanFiles"
+                sh "sbt $SBT_OPTIONS setupTools setupExportResults"
+
+                // setup Fuseki, ontologies, tools, environment
             }
         }
 
-        stage('Build') {
+        stage('Checkout OML') {
+            when {
+                expression { params.OML_REPO != 'undefined' }
+            }
             steps {
-                sh "${tool name: 'default-sbt', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt compile test:compile"
-                //archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+                echo "Checkout OML..."
+
+                withCredentials([usernamePassword(credentialsId: 'git-credentials-NFR-caesar.ci.token-ID', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                    sh 'git config user.email "brian.p.satorius@jpl.nasa.gov"'
+                    sh 'git config user.name "Brian Satorius (as CAESAR CI agent)"'
+                    sh "scripts/import.sh ${OML_REPO} ${OML_REPO_BRANCH}"
+                    // fetch the oml repo commit id as fuseki dataset name
+                    script {
+                        FUSEKI_DATASET_NAME = sh(
+                                script: 'cd "target/import/${OML_REPO}"; git rev-parse HEAD',
+                                returnStdout: true
+                        ).trim()
+                        echo "FUSEKI_DATASET_NAME: ${FUSEKI_DATASET_NAME}"
+                    }
+                }
             }
         }
 
-        stage('Validate-Ontologies') {
-            environment {
-                METADATA = "${params.ONT_METADATA}"
+        stage('OML to OWL') {            
+            steps {
+                echo "Converting OML to OWL..."
+
+                sh "scripts/oml-conversion.sh ${OML_REPO}"
+            }
+        }
+
+        stage('Bootstrap Builds') {
+            when {
+                expression { params.BOOTSTRAP_BUILDS_STEP == 'TRUE' }
             }
             steps {
-                echo "Validating ontologies..."
-                sh "echo 'METADATA plain: \$METADATA'"
-                echo "METADATA env: ${env.METADATA}"
+                echo "Bootstrapping builds, and location mapping..."
 
-                sh "cd workflow; . env.sh; echo \$JENA_PORT"
+                sh "cd workflow; source ./env.sh; /usr/bin/make bootstrap"
+                sh "cd workflow; source ./env.sh; /usr/bin/make location-mapping"
+            }
+        }
 
-                sh "cd workflow; . env.sh; /usr/bin/make \$WORKFLOW/Makefile"
-                sh "cd workflow; . env.sh; /usr/bin/make location-mapping"
-                sh "cd workflow; . env.sh; /usr/bin/make validate-roots"
+        stage('Validate Roots') {
+            when {
+                expression { params.VALIDATE_ROOTS_STEP == 'TRUE' }
+            }
+            steps {
+                echo "Validating ontologies roots, running consistency and satisfiability reasoner..."
 
-                junit '**/target/workflow/tests/**/*.xml'
+                sh "cd workflow; source ./env.sh; /usr/bin/make validate-roots"
+                sh "cd workflow; source ./env.sh; /usr/bin/make identify-unsat-roots"
+            }
+        }
+
+        stage('Load Production') {
+            when {
+                expression { params.LOAD_PRODUCTION_STEP == 'TRUE' }
+            }
+            steps {
+                echo "Creating Dataset on Fuseki name  ${FUSEKI_DATASET_NAME} port number ${params.FUSEKI_PORT_NUMBER}"
+                sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; ../scripts/create-dataset.sh"
+
+                echo "Calculating entailments and Loading the dataset to Fuseki..."
+                sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; /usr/bin/make load-production"
+
+                echo "Loading prefixes..."
+                sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER}; ./load-prefix.sh"
+            }
+        }
+
+        stage("Run Audits and Reports") {
+            when {
+                expression { params.RUN_REPORTS_STEP == 'TRUE' }
+            }
+            steps {
+                echo "Run audits and reports..."
+                sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER} ${params.AUDITS_TREE_PATH} ${params.REPORTS_TREE_PATH}; /usr/bin/make run-audits"
+                sh "cd workflow; source ./env.sh ${FUSEKI_DATASET_NAME} ${params.FUSEKI_PORT_NUMBER} ${params.AUDITS_TREE_PATH} ${params.REPORTS_TREE_PATH}; /usr/bin/make run-reports"
             }
         }
     }
+
+    post {
+        always {
+            junit 'target/**/*.xml'
+        }
+    }
+
 }
