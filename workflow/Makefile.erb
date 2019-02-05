@@ -30,6 +30,7 @@ CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS ?= --info --no-disjoints
 CURL ?= curl
 CURL_OPTS ?= --silent
 
+<% DEBUG = ENV['DEBUG'] %>
 DEPENDENCIES_FILE ?= .dependencies
 
 ENTAIL ?= $(JRUBY_CMD) $(TOOLS_DIR)/entail
@@ -82,6 +83,7 @@ LOCATION_MAPPING_FILE ?= location-mapping.yaml
 MAKE_MAKEFILE ?= $(TOOLS_DIR)/make-makefile
 
 OMG_ORG ?= <%= OMG_ORG = 'www.omg.org' %>
+<% OMIT_PATTERNS = JSON.parse(ENV['OMIT_PATTERNS'] || [].to_json) %>
 ONTOLOGIES_DIR ?= <%= ONTOLOGIES_DIR = ENV['ONTOLOGIES_DIR'] || ARTIFACTS_DIR + '/ontologies' %>
 OWL_SUFFIX = .owl
 
@@ -232,6 +234,8 @@ tmpfile = $(dir $1).$(notdir $1)
 	    Find.find(search_path) do |fp|
 	      Find.prune if prune_list.include?(fp)
 	      next unless File.file?(fp) && File.basename(fp) =~ /\.owl/
+	      next if OMIT_PATTERNS.any? { |p| fp =~ Regexp.new(p) }
+	      warn "processing #{fp}" if DEBUG
 	      File.open(fp) do |f|
 		doc = REXML::Document.new(f)
 
