@@ -232,6 +232,9 @@ tmpfile = $(dir $1).$(notdir $1)
 	path_hash.each do |search_path, prune_list|
 	  begin
 	    Find.find(search_path) do |fp|
+	      warn "path #{fp}" if DEBUG
+	      warn "prune list #{prune_list.inspect}" if DEBUG
+	      warn "match #{prune_list.include?(fp)}"
 	      Find.prune if prune_list.include?(fp)
 	      next unless File.file?(fp) && File.basename(fp) =~ /\.owl/
 	      next if OMIT_PATTERNS.any? { |p| fp =~ Regexp.new(p) }
