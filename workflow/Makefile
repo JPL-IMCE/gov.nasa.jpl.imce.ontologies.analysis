@@ -43,10 +43,7 @@ $(WORKFLOW)/Makefile: $(WORKFLOW_SOURCES)/Makefile.erb $(WORKFLOW)/logging.prope
 	(cd $(WORKFLOW); $(JRUBY_CMD) $(MAKE_MAKEFILE) $< > $@.tmp) && mv $@.tmp $@
 
 $(WORKFLOW)/.symlinks:
-	ln -s $(ONTOLOGIES)/* $(WORKFLOW)
 	touch $(WORKFLOW)/.symlinks
-
-
 
 location-mapping: bootstrap $(WORKFLOW)/.symlinks
 	(cd $(WORKFLOW); nice make ${PARALLEL_MAKE_OPTS} location-mapping)
