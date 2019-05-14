@@ -24,7 +24,7 @@ BUNDLE_CLOSURE_STEM ?= export-bundle
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-tbox-bundle
 CLOSE_EXPORTED_USER_MODELS_BUNDLE_OPTS ?= --info --no-disjoints
-CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS ?= --debug --excise '$(BACKBONE_PREFIX)' --backbone_iri '$(BACKBONE_PREFIX)' \
+CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS ?= --info --excise '$(BACKBONE_PREFIX)' --backbone_iri '$(BACKBONE_PREFIX)' \
 		     --abstract '$(BACKBONE_ABSTRACT)' --concrete '$(BACKBONE_CONCRETE)'
 CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS ?= --info --no-disjoints
 CURL ?= curl
@@ -724,7 +724,7 @@ $(UNSAT_FUNC_PROPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 define do_close_tbox
   @echo closure artifact '->' $@
   @mkdir -p $(dir $@)
-  $(CLOSE_BUNDLE) $(2) \
+  @$(CLOSE_BUNDLE) $(2) \
     --name $(1) --uri $(3) \
     --namespace '$(4)=>$(3)' \
     --namespace '$(6)=>$(5)' \
