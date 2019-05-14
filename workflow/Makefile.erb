@@ -24,9 +24,10 @@ BUNDLE_CLOSURE_STEM ?= export-bundle
 
 CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-tbox-bundle
 CLOSE_EXPORTED_USER_MODELS_BUNDLE_OPTS ?= --info --no-disjoints
-CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS ?= --debug --excise '$(BACKBONE_PREFIX)' --backbone_iri '$(BACKBONE_PREFIX)' \
+CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS ?= --info --excise '$(BACKBONE_PREFIX)' --backbone_iri '$(BACKBONE_PREFIX)' \
 		     --abstract '$(BACKBONE_ABSTRACT)' --concrete '$(BACKBONE_CONCRETE)'
-CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS ?= --info --no-disjoints
+CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS ?= --info --excise '$(BACKBONE_PREFIX)' --backbone_iri '$(BACKBONE_PREFIX)' \
+		     --abstract '$(BACKBONE_ABSTRACT)' --concrete '$(BACKBONE_CONCRETE)'
 CURL ?= curl
 CURL_OPTS ?= --silent
 
@@ -230,12 +231,13 @@ tmpfile = $(dir $1).$(notdir $1)
     FileUtils.cd(ONTOLOGIES_DIR) do
       PATHS.each do |group, path_hash|
 	path_hash.each do |search_path, prune_list|
+          full_prune_list = prune_list.map { |l| search_path + '/' + l }
 	  begin
 	    Find.find(search_path) do |fp|
 	      warn "path #{fp}" if DEBUG
-	      warn "prune list #{prune_list.inspect}" if DEBUG
-	      warn "match #{prune_list.include?(fp)}" if DEBUG
-	      Find.prune if prune_list.include?(fp)
+	      warn "prune list #{full_prune_list.inspect}" if DEBUG
+	      warn "match #{full_prune_list.include?(fp)}" if DEBUG
+	      Find.prune if full_prune_list.include?(fp)
 	      next unless File.file?(fp) && File.basename(fp) =~ /\.owl/
 	      next if OMIT_PATTERNS.any? { |p| fp =~ Regexp.new(p) }
 	      warn "processing #{fp}" if DEBUG
@@ -724,7 +726,7 @@ $(UNSAT_FUNC_PROPS_REPORT_FILE): $(VALIDATE_ROOTS_TEST_FILE)
 define do_close_tbox
   @echo closure artifact '->' $@
   @mkdir -p $(dir $@)
-  $(CLOSE_BUNDLE) $(2) \
+  @$(CLOSE_BUNDLE) $(2) \
     --name $(1) --uri $(3) \
     --namespace '$(4)=>$(3)' \
     --namespace '$(6)=>$(5)' \
