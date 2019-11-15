@@ -113,7 +113,7 @@ UNSAT_FUNC_PROPS_REPORT_FILE = $(TESTS_DIR)/unsat-func-props.csv
 UNSAT_ROOTS_REPORT_FILE = $(TESTS_DIR)/unsat-roots.csv
 
 VALIDATE_OWL ?= $(JRUBY_CMD) -J-Djava.util.logging.config.file=logging.properties $(TOOLS_DIR)/validate-owl
-VALIDATE_OWL_OPTS ?= --debug --satisfiability --indicate-status
+VALIDATE_OWL_OPTS ?= --info --satisfiability --indicate-status
 
 VALIDATE_ROOTS_TEST_FILE ?= $(TESTS_DIR)/validate-roots$(XML_SUFFIX)
 VALIDATE_ROOTS_ID ?= validate-roots
@@ -495,7 +495,7 @@ location-mapping: $(LOCATION_MAPPING_FILE)
 define validate_roots
   @echo validate '->' $@
   @mkdir -p $(dir $@)
-  $(VALIDATE_OWL) $(VALIDATE_OWL_OPTS) --id $(1) $(2) > $@
+  @$(VALIDATE_OWL) $(VALIDATE_OWL_OPTS) --id $(1) $(2) > $@
 endef
 
 .PHONY: validate-roots
