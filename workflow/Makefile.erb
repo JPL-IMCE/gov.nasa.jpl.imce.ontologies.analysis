@@ -495,7 +495,7 @@ location-mapping: $(LOCATION_MAPPING_FILE)
 define validate_roots
   @echo validate '->' $@
   @mkdir -p $(dir $@)
-  @$(VALIDATE_OWL) $(VALIDATE_OWL_OPTS) --id $(1) $(2) > $@
+  $(VALIDATE_OWL) $(VALIDATE_OWL_OPTS) --id $(1) $(2) > $@
 endef
 
 .PHONY: validate-roots
