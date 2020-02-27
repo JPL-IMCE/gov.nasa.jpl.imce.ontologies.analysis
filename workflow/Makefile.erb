@@ -65,7 +65,7 @@ GET_UNSAT_IRIS_OPTS ?=
 GET_UNSAT_ROOTS ?= $(TOOLS_DIR)/get-unsat-roots
 GET_UNSAT_ROOTS_OPTS ?= --info
 
-<% IMPORTED_VOCABULARIES = JSON.parse(ENV['IMPORTED_VOCABULARIES'] || { 'imce.jpl.nasa.gov' => ['imce.jpl.nasa.gov/www.omg.org', 'imce.jpl.nasa.gov/vocabulary', 'imce.jpl.nasa.gov/foundation/owl2-mof2'], 'purl.org' => [], 'iso.org' => [] }.to_json) %>
+<% IMPORTED_VOCABULARIES = JSON.parse(ENV['IMPORTED_VOCABULARIES'] || { 'imce.jpl.nasa.gov' => ['imce.jpl.nasa.gov/www.omg.org', 'imce.jpl.nasa.gov/vocabulary', 'imce.jpl.nasa.gov/foundation/owl2-mof2'], 'iso.org' => [], 'purl.org' => [] }.to_json) %>
 IMPORTED_VOCABULARIES_BUNDLE_STEM ?= imported-vocabularies
 
 IRI_TO_MDID ?= $(TOOLS_DIR)/iri-to-mdid
@@ -87,7 +87,7 @@ OMG_ORG ?= <%= OMG_ORG = 'www.omg.org' %>
 ONTOLOGIES_DIR ?= <%= ONTOLOGIES_DIR = ENV['ONTOLOGIES_DIR'] || ARTIFACTS_DIR + '/ontologies' %>
 OWL_SUFFIX = .owl
 
-PROJECT ?= europa-clipper
+PROJECT ?= europa
 
 REPORTS_DIR ?= $(ARTIFACTS_DIR)/reports
 REPORTS_TREE ?= $(REPORTS_TREE_PATH)
@@ -260,7 +260,7 @@ tmpfile = $(dir $1).$(notdir $1)
 	      warn "prune list #{prune_list.inspect}" if DEBUG
 	      warn "match #{prune_list.include?(fp)}" if DEBUG
 	      Find.prune if prune_list.include?(fp)
-	      next unless File.file?(fp) && File.basename(fp) =~ /\.owl/
+	      next unless File.file?(fp) && File.basename(fp) =~ /\.owl\z/
 	      next if OMIT_PATTERNS.any? { |p| fp =~ Regexp.new(p) }
 	      warn "processing #{fp}" if DEBUG
 	      File.open(fp) do |f|
@@ -326,14 +326,22 @@ tmpfile = $(dir $1).$(notdir $1)
     m[g.ontology_iri] = g.ontology_file_iri
     m
   end
-  								
+
+  # Add location mappings for entailments.
+
+  ENTAILMENTS.each do |type, data|
+    iri = exported_user_models_bundle_graph.entailments_iri(type)
+    file_iri = exported_user_models_bundle_graph.entailments_file_iri(type)
+    location_map[iri] = file_iri
+  end
+  
   # Create imports graph. Omit back edges; processing does not rely on acyclicity at present.
   
   imports_graph = metadata['edges'].inject(DirectedAcyclicGraph.new(DefaultEdge)) do |memo, edge|
     importing = graphs[edge['importing']]
     raise "no importing graph for #{edge['importing']}" unless importing
     imported = graphs[edge['imported']]
-    raise "no imported graph for #{edge['imported']}" unless imported
+    raise "no imported graph for #{edge['imported']} (from #{edge['importing']})" unless imported
     memo.addVertex(importing)
     memo.addVertex(imported)
     begin
@@ -449,22 +457,22 @@ tmpfile = $(dir $1).$(notdir $1)
   validate_roots_test_file_rule.prereqs << exported_user_models_bundle_graph.ontology_file
   validate_roots_test_file_rule.cmds << "$(call validate_roots,$(VALIDATE_ROOTS_ID),#{exported_user_models_bundle_graph.ontology_iri})"
   
-  # Create rules for calculating entailments.
+  # Create rules for calculating entailments. All entailments are created by a single command, so we run that command
+  # with the first entailment as the target and make the others depend on that.
   
   entailments_top_rule = Makefile::Rule.new('entailments')
   entailments_rules = [entailments_top_rule]
-  ENTAILMENTS.each do |type, data|
-    [exported_user_models_bundle_graph].each do |o|
-      input_iri = o.ontology_iri
-      output_iri = o.entailments_iri(type)
-      target = o.entailments_file(type)
-      entailments_top_rule.prereqs << target
-      rule = Makefile::Rule.new(target)
-      rule.prereqs << o.ontology_file
-      entailments_rules << rule
-      rule.cmds << %Q{$(call do_entailments,#{input_iri},#{output_iri},"#{data.join(' ')}")}
-    end
-  end
+  first_type = ENTAILMENTS.keys.first
+  first_target = exported_user_models_bundle_graph.entailments_file(first_type)
+  entailments_top_rule.prereqs << first_target
+  specs = ENTAILMENTS.inject([]) do |s, e|
+    type, data = *e
+    s << "--spec #{exported_user_models_bundle_graph.entailments_iri(type)}='#{data.join(' ')}'"
+  end.join(' ')
+  first_rule = Makefile::Rule.new(first_target)
+  first_rule.prereqs << exported_user_models_bundle_graph.ontology_file
+  first_rule.cmds << %Q{$(call do_entailments,#{exported_user_models_bundle_graph.ontology_iri},#{specs})}
+  entailments_rules << first_rule
   
 %>
 
@@ -513,9 +521,9 @@ validate-roots:	$(VALIDATE_ROOTS_TEST_FILE)
 define do_entailments
   @echo entail '->' $@
   @mkdir -p $(dir $@)
-  @$(ENTAIL) $(ENTAIL_OPTS) \
+  $(ENTAIL) $(ENTAIL_OPTS) \
   	     $$(test $$(grep '<failure' $(VALIDATE_ROOTS_TEST_FILE) | wc -l) -gt 0 && echo '--vacuous') \
-  	     --input-iri $(1) --output-iri $(2) --types $(3) $(4) $^ > $(call tmpfile,$@) && mv $(call tmpfile,$@) $@
+  	     --input-iri $(1) $(2) $^
 endef
 
 <%= entailments_rules.map { |r| r.to_s }.join("\n") %>

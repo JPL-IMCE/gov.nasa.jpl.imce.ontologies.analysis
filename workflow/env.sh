@@ -27,6 +27,9 @@ export WORKFLOW_SOURCES=$(dirname $(pwd))/workflow
 export BUNDLES_DIR=$(dirname $(pwd))/target/workflow/artifacts/bundles
 
 # Read-only
+export ENTAILMENTS_DIR=$(dirname $(pwd))/target/workflow/artifacts/entailments
+
+# Read-only
 export ONTOLOGIES_DIR=$(dirname $(pwd))/target/workflow/artifacts/ontologies
 
 # Read-only
@@ -57,12 +60,15 @@ $TOOLS/lib/Jena:\
 $TOOLS/lib/Makefile:\
 $TOOLS/lib/OWLAPI:\
 $TOOLS/lib/OntologyBundles:\
+$TOOLS/lib/Openllet:\
 $TOOLS/lib/Pellet:\
 $TOOLS/lib/ruby-jena:\
 $TOOLS/lib/ruby-owlapi:\
+$TOOLS/lib/ruby-openllet:\
 $TOOLS/lib/ruby-pellet:\
 $TOOLS/lib/JGraphT:\
-$TOOLS/lib/OMFMetadata
+$TOOLS/lib/OMFMetadata:\
+$TOOLS/lib/Slf4j
 
 [ -z "$GEM_HOME" ] && echo "GEM_HOME environment not set!"
 # && exit -1
