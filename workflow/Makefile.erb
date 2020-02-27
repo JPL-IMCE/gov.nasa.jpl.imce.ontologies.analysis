@@ -534,9 +534,7 @@ validate-roots:	$(VALIDATE_ROOTS_TEST_FILE)
 define do_entailments
   @echo entail '->' $@
   @mkdir -p $(dir $@)
-  $(ENTAIL) $(ENTAIL_OPTS) \
-  	     $$(test $$(grep '<failure' $(VALIDATE_ROOTS_TEST_FILE) | wc -l) -gt 0 && echo '--vacuous') \
-  	     --input-iri $(1) $(2) $^
+  $(ENTAIL) $(ENTAIL_OPTS) --input-iri $(1) $(2) $^
 endef
 
 <%= entailments_rules.map { |r| r.to_s }.join("\n") %>
