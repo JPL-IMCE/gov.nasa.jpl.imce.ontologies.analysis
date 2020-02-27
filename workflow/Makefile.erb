@@ -462,6 +462,9 @@ tmpfile = $(dir $1).$(notdir $1)
   
   entailments_top_rule = Makefile::Rule.new('entailments')
   entailments_rules = [entailments_top_rule]
+
+  # Make first rule.
+  
   first_type = ENTAILMENTS.keys.first
   first_target = exported_user_models_bundle_graph.entailments_file(first_type)
   entailments_top_rule.prereqs << first_target
@@ -473,7 +476,17 @@ tmpfile = $(dir $1).$(notdir $1)
   first_rule.prereqs << exported_user_models_bundle_graph.ontology_file
   first_rule.cmds << %Q{$(call do_entailments,#{exported_user_models_bundle_graph.ontology_iri},#{specs})}
   entailments_rules << first_rule
+
+  # Make other rules.
   
+  ENTAILMENTS.keys.drop(1).each do |type|
+    data = ENTAILMENTS[type]
+    target = exported_user_models_bundle_graph.entailments_file(type)
+    rule = Makefile::Rule.new(target)
+    rule.prereqs << first_target
+    entailments_top_rule.prereqs << target
+    entailments_rules << rule
+  end
 %>
 
 #
