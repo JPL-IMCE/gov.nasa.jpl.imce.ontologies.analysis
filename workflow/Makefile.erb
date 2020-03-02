@@ -26,15 +26,13 @@ CLOSE_BUNDLE ?= $(JRUBY_CMD) $(TOOLS)/tools/close-tbox-bundle
 CLOSE_EXPORTED_USER_MODELS_BUNDLE_OPTS ?= --info --no-disjoints
 CLOSE_EXPORTED_VOCABULARIES_BUNDLE_OPTS ?= --info --excise '$(BACKBONE_PREFIX)' --backbone_iri '$(BACKBONE_PREFIX)' \
 		     --abstract '$(BACKBONE_ABSTRACT)' --concrete '$(BACKBONE_CONCRETE)'
-CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS ?= --info --no-disjoints
+CLOSE_IMPORTED_VOCABULARIES_BUNDLE_OPTS ?= --info --excise '$(BACKBONE_PREFIX)' --backbone_iri '$(BACKBONE_PREFIX)' \
+		     --abstract '$(BACKBONE_ABSTRACT)' --concrete '$(BACKBONE_CONCRETE)'
 CURL ?= curl
 CURL_OPTS ?= --silent
 
 <% DEBUG = ENV['DEBUG'] %>
 DEPENDENCIES_FILE ?= .dependencies
-
-ENTAIL ?= $(JRUBY_CMD) $(TOOLS_DIR)/entail
-ENTAIL_OPTS = --info --remove-backbone
 
 EMPTY_IMPORTS_FILE ?= empty-imports.yaml
 
@@ -112,8 +110,8 @@ UNSAT_FUNC_PROPS_REPORT_FILE = $(TESTS_DIR)/unsat-func-props.csv
 
 UNSAT_ROOTS_REPORT_FILE = $(TESTS_DIR)/unsat-roots.csv
 
-VALIDATE_OWL ?= $(JRUBY_CMD) -J-Djava.util.logging.config.file=logging.properties $(TOOLS_DIR)/validate-owl
-VALIDATE_OWL_OPTS ?= --info --satisfiability --indicate-status
+VALIDATE_AND_EXTRACT ?= $(JRUBY_CMD) -J-Djava.util.logging.config.file=logging.properties $(TOOLS_DIR)/validate-and-extract
+VALIDATE_AND_EXTRACT_OPTS ?= --info --remove-backbone 
 
 VALIDATE_ROOTS_TEST_FILE ?= $(TESTS_DIR)/validate-roots$(XML_SUFFIX)
 VALIDATE_ROOTS_ID ?= validate-roots
@@ -455,36 +453,21 @@ tmpfile = $(dir $1).$(notdir $1)
  
   validate_roots_test_file_rule = Makefile::Rule.new('$(VALIDATE_ROOTS_TEST_FILE)')
   validate_roots_test_file_rule.prereqs << exported_user_models_bundle_graph.ontology_file
-  validate_roots_test_file_rule.cmds << "$(call validate_roots,$(VALIDATE_ROOTS_ID),#{exported_user_models_bundle_graph.ontology_iri})"
-  
-  # Create rules for calculating entailments. All entailments are created by a single command, so we run that command
-  # with the first entailment as the target and make the others depend on that.
-  
-  entailments_top_rule = Makefile::Rule.new('entailments')
-  entailments_rules = [entailments_top_rule]
-
-  # Make first rule.
-  
-  first_type = ENTAILMENTS.keys.first
-  first_target = exported_user_models_bundle_graph.entailments_file(first_type)
-  entailments_top_rule.prereqs << first_target
   specs = ENTAILMENTS.inject([]) do |s, e|
     type, data = *e
     s << "--spec #{exported_user_models_bundle_graph.entailments_iri(type)}='#{data.join(' ')}'"
   end.join(' ')
-  first_rule = Makefile::Rule.new(first_target)
-  first_rule.prereqs << exported_user_models_bundle_graph.ontology_file
-  first_rule.cmds << %Q{$(call do_entailments,#{exported_user_models_bundle_graph.ontology_iri},#{specs})}
-  entailments_rules << first_rule
-
-  # Make other rules.
+  validate_roots_test_file_rule.cmds << "$(call do_validate_and_extract,$(VALIDATE_ROOTS_ID),#{specs},#{exported_user_models_bundle_graph.ontology_iri})"
   
-  ENTAILMENTS.keys.drop(1).each do |type|
-    data = ENTAILMENTS[type]
-    target = exported_user_models_bundle_graph.entailments_file(type)
-    rule = Makefile::Rule.new(target)
-    rule.prereqs << first_target
-    entailments_top_rule.prereqs << target
+  # Create rule for extracting entailments. Entailments are side effects of validation.
+
+  entailments_rule = Makefile::Rule.new('entailments')
+  entailments_rules = [entailments_rule]
+  ENTAILMENTS.each do |type, data|
+    e_file = exported_user_models_bundle_graph.entailments_file(type)
+    entailments_rule.prereqs << e_file
+    rule = Makefile::Rule.new(e_file)
+    rule.prereqs << '$(VALIDATE_ROOTS_TEST_FILE)'
     entailments_rules << rule
   end
 %>
@@ -510,14 +493,18 @@ location-mapping: $(LOCATION_MAPPING_FILE)
 %>
 
 #
-# validate-roots
+# validate-and-extract
 #
 
-define validate_roots
+define do_validate_and_extract
   @echo validate '->' $@
   @mkdir -p $(dir $@)
-  @$(VALIDATE_OWL) $(VALIDATE_OWL_OPTS) --id $(1) $(2) > $@
+  $(VALIDATE_AND_EXTRACT) $(VALIDATE_AND_EXTRACT_OPTS) --id $(1) $(2) --input-iri $(3) $^ > $@
 endef
+
+#
+# validate-roots
+#
 
 .PHONY: validate-roots
 
@@ -531,13 +518,7 @@ validate-roots:	$(VALIDATE_ROOTS_TEST_FILE)
 
 .PHONY:	entailments
 
-define do_entailments
-  @echo entail '->' $@
-  @mkdir -p $(dir $@)
-  @$(ENTAIL) $(ENTAIL_OPTS) --input-iri $(1) $(2) $^
-endef
-
-<%= entailments_rules.map { |r| r.to_s }.join("\n") %>
+<%= entailments_rules.join('') %>
 
 #
 # load-production
