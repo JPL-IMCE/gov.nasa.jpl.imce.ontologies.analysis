@@ -499,7 +499,7 @@ location-mapping: $(LOCATION_MAPPING_FILE)
 define do_validate_and_extract
   @echo validate '->' $@
   @mkdir -p $(dir $@)
-  $(VALIDATE_AND_EXTRACT) $(VALIDATE_AND_EXTRACT_OPTS) --id $(1) $(2) --input-iri $(3) $^ > $@
+  @$(VALIDATE_AND_EXTRACT) $(VALIDATE_AND_EXTRACT_OPTS) --id $(1) $(2) --input-iri $(3) $^ > $@
 endef
 
 #
